@@ -10,6 +10,7 @@ import { CategoryGrid } from "@/components/game/CategoryGrid";
 import { QuestionCard } from "@/components/game/QuestionCard";
 import { WaitingScreen } from "@/components/game/WaitingScreen";
 import { RevealCard } from "@/components/game/RevealCard";
+import { CoinToss } from "@/components/game/CoinToss";
 import { TurnIndicator } from "@/components/ui/TurnIndicator";
 import { ConnectionIndicator } from "@/components/ui/ConnectionIndicator";
 import { ToastContainer } from "@/components/ui/Toast";
@@ -56,7 +57,7 @@ export default function PlayPage({ params }: PlayPageProps) {
     }
   }, [roomId, room, localPlayer, initSocketListeners, joinRoom]);
 
-  // CRITICAL FIX: If room is not active or player 2 hasn't joined, redirect back to lobby
+  // If room is not active or player 2 hasn't joined, redirect back to lobby
   useEffect(() => {
     if (room && (room.status === "waiting" || !room.players?.[1])) {
       router.push(`/room/${roomId}/lobby`);
@@ -74,29 +75,37 @@ export default function PlayPage({ params }: PlayPageProps) {
   const player1 = room?.players?.[0];
   const player2 = room?.players?.[1];
 
-  const isPlayer1 = player1?.displayName === localPlayer?.displayName;
-  const myPlayerId = isPlayer1 ? player1?.id : player2?.id;
-  const partner = isPlayer1 ? player2 : player1;
+  // Robust player matching by ID or by displayName fallback
+  const isMePlayer1 =
+    localPlayer?.id === player1?.id ||
+    localPlayer?.displayName === player1?.displayName;
+
+  const myPlayer = isMePlayer1 ? player1 : player2;
+  const partner = isMePlayer1 ? player2 : player1;
   const partnerName = partner?.displayName ?? "Partner";
 
   const turn = room?.turn;
   const round = turn?.round ?? 1;
   const totalRounds = room?.settings?.rounds ?? 6;
-
-  // Opposite person chooses logic:
-  const isPicker =
-    turn?.pickerPlayerId === myPlayerId ||
-    (turn?.pickerPlayerId === "host" && isPlayer1) ||
-    (turn?.pickerPlayerId === "guest" && !isPlayer1);
-
-  const isAnswerer =
-    turn?.answererPlayerId === myPlayerId ||
-    (!isPicker && !!player2);
-
   const phase = turn?.phase ?? "choosing_category";
   const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
 
+  // Exact role identification:
+  const isPicker =
+    (myPlayer && turn?.pickerPlayerId === myPlayer.id) ||
+    (isMePlayer1 && turn?.pickerPlayerId === player1?.id) ||
+    (!isMePlayer1 && turn?.pickerPlayerId === player2?.id);
+
+  const isAnswerer =
+    (myPlayer && turn?.answererPlayerId === myPlayer.id) ||
+    (isMePlayer1 && turn?.answererPlayerId === player1?.id) ||
+    (!isMePlayer1 && turn?.answererPlayerId === player2?.id) ||
+    (!isPicker && !!player2);
+
   const getRoleDescription = () => {
+    if (phase === "coin_toss") {
+      return "Coin toss ceremony";
+    }
     if (phase === "choosing_category" || phase === "question_loading") {
       return isPicker
         ? `You are choosing a mood for ${partnerName}`
@@ -190,6 +199,15 @@ export default function PlayPage({ params }: PlayPageProps) {
 
       {/* Main Interactive Stage */}
       <main className="max-w-2xl mx-auto w-full my-auto py-8">
+        {/* PHASE 0: 3D COIN TOSS CEREMONY */}
+        {phase === "coin_toss" && player1 && player2 && (
+          <CoinToss
+            player1={player1}
+            player2={player2}
+            winnerId={turn?.tossWinnerId || turn?.pickerPlayerId || player1.id}
+          />
+        )}
+
         {/* PHASE 1: CHOOSING CATEGORY (Picker chooses mood for Answerer) */}
         {phase === "choosing_category" && (
           <>

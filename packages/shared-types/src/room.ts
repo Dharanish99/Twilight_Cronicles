@@ -12,8 +12,9 @@ export interface PlayerState {
 
 export interface TurnState {
   activePlayerId: string;
-  pickerPlayerId: string; // The person choosing the mood/category for their partner
-  answererPlayerId: string; // The person answering the question
+  pickerPlayerId: string;
+  answererPlayerId: string;
+  tossWinnerId?: string;
   round: number;
   phase: TurnPhase;
   chosenCategory?: CategoryId;

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   RoomState,
   PlayerState,
@@ -159,7 +159,22 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("room:state_snapshot", (roomState: RoomState) => {
-          set({ room: roomState });
+          set((state) => {
+            // Reconcile localPlayer id with server player id matching display name
+            const currentLocal = state.localPlayer;
+            if (currentLocal && roomState.players) {
+              const matched = roomState.players.find(
+                (p) => p && p.displayName === currentLocal.displayName
+              );
+              if (matched && matched.id !== currentLocal.id) {
+                return {
+                  room: roomState,
+                  localPlayer: { ...currentLocal, id: matched.id },
+                };
+              }
+            }
+            return { room: roomState };
+          });
         });
 
         socket.on("room:player_joined", ({ player }: { player: PlayerState }) => {
@@ -179,7 +194,7 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("game:started", () => {
-          get().addToast("Game started!", "success");
+          get().addToast("🪙 Coin toss in progress...", "neutral");
         });
 
         socket.on("turn:category_selected", ({ category }: { category: CategoryId }) => {
@@ -399,6 +414,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "twilight-game-store",
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         localPlayer: state.localPlayer,
       }),

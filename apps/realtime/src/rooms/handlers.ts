@@ -94,7 +94,7 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
       socket.join(roomId);
 
       socket.emit("room:state_snapshot", roomState);
-      console.log(`[room:create] Room ${roomId} created by ${displayName} (waiting for partner)`);
+      console.log(`[room:create] Room ${roomId} created by ${displayName} (ID: ${hostPlayerId})`);
     } catch (err: any) {
       console.error("[room:create] Error:", err);
       socket.emit("error:generic", { reason: "Failed to create room" });
@@ -124,17 +124,16 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
         return;
       }
 
-      // Check if existing player or new player 2
       const p1 = roomState.players[0];
       const p2 = roomState.players[1];
 
       let guestPlayerId = uuidv4();
 
-      if (p1 && p1.displayName === displayName.trim()) {
+      if (p1 && (p1.displayName === displayName.trim() || socket.data.playerId === p1.id)) {
         // Reconnecting host
         guestPlayerId = p1.id;
         p1.connection = "connected";
-      } else if (p2 && p2.displayName === displayName.trim()) {
+      } else if (p2 && (p2.displayName === displayName.trim() || socket.data.playerId === p2.id)) {
         // Reconnecting guest
         guestPlayerId = p2.id;
         p2.connection = "connected";
@@ -171,7 +170,7 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
       io.to(targetRoomId).emit("room:player_joined", { player: joinedPlayer });
       io.to(targetRoomId).emit("room:state_snapshot", roomState);
 
-      console.log(`[room:join] Player ${displayName} connected to room ${targetRoomId}`);
+      console.log(`[room:join] Player ${displayName} joined room ${targetRoomId} (ID: ${guestPlayerId})`);
     } catch (err: any) {
       console.error("[room:join] Error:", err);
       socket.emit("error:generic", { reason: "Failed to join room" });
@@ -200,7 +199,7 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
     }
   });
 
-  // game:start
+  // game:start (Trigger 3D Coin Toss Ceremony)
   socket.on("game:start", async () => {
     const { roomId } = socket.data;
     if (!roomId) return;
@@ -212,28 +211,43 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
       const p1 = roomState.players[0];
       const p2 = roomState.players[1];
 
-      // Must have both players
       if (!p1 || !p2) {
         socket.emit("error:generic", { reason: "Need both players in room before starting" });
         return;
       }
 
+      // Coin Toss: 50% chance for either player to win first pick
+      const tossWinner = Math.random() < 0.5 ? p1 : p2;
+      const tossLoser = tossWinner.id === p1.id ? p2 : p1;
+
       roomState.status = "active";
-      // Player 1 picks the mood for Player 2
       roomState.turn = {
-        activePlayerId: p1.id,
-        pickerPlayerId: p1.id,
-        answererPlayerId: p2.id,
+        activePlayerId: tossWinner.id,
+        pickerPlayerId: tossWinner.id,
+        answererPlayerId: tossLoser.id,
+        tossWinnerId: tossWinner.id,
         round: 1,
-        phase: "choosing_category",
+        phase: "coin_toss",
         skipsThisTurn: 0,
       };
 
       await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
 
-      io.to(roomId).emit("game:started", { firstActivePlayerId: p1.id });
+      io.to(roomId).emit("game:started", { firstActivePlayerId: tossWinner.id });
       io.to(roomId).emit("room:state_snapshot", roomState);
-      console.log(`[game:start] Game started in room ${roomId}. Host ${p1.displayName} is picking mood for ${p2.displayName}`);
+      console.log(`[game:start] Coin Toss in room ${roomId}. Toss winner: ${tossWinner.displayName}`);
+
+      // Automatically transition from coin toss to category selection after 4.2 seconds
+      setTimeout(async () => {
+        const latestRoom = await getJson<RoomState>(keys.room(roomId));
+        if (latestRoom && latestRoom.turn.phase === "coin_toss") {
+          latestRoom.turn.phase = "choosing_category";
+          await setJson(keys.room(roomId), latestRoom, ROOM_TTL_SECONDS);
+          io.to(roomId).emit("turn:phase_update", { phase: "choosing_category" });
+          io.to(roomId).emit("room:state_snapshot", latestRoom);
+          console.log(`[coin_toss] Finished. ${tossWinner.displayName} is now picking category.`);
+        }
+      }, 4200);
     } catch (err: any) {
       console.error("[game:start] Error:", err);
     }
