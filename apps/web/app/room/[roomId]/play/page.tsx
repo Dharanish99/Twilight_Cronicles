@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, use, useState } from "react";
+import { useEffect, use, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings as SettingsIcon, Flag } from "lucide-react";
@@ -22,6 +22,7 @@ interface PlayPageProps {
 export default function PlayPage({ params }: PlayPageProps) {
   const { roomId } = use(params);
   const router = useRouter();
+  const initRef = useRef(false);
 
   const {
     room,
@@ -47,41 +48,60 @@ export default function PlayPage({ params }: PlayPageProps) {
     { id: string; emoji: string }[]
   >([]);
 
-  // Initialize socket on mount if room state missing
+  // Initialize socket ONCE on mount
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
     initSocketListeners();
-    if (!room && roomId) {
-      const name = localPlayer?.displayName || "Player";
-      const avatar = localPlayer?.avatar || "ember";
-      joinRoom(name, avatar, roomId);
-    }
-  }, [roomId, room, localPlayer, initSocketListeners, joinRoom]);
+  }, [initSocketListeners]);
 
-  // If room is not active or player 2 hasn't joined, redirect back to lobby
+  // Re-join room if we landed here without state (e.g. page refresh)
+  useEffect(() => {
+    if (!room && roomId && localPlayer) {
+      joinRoom(localPlayer.displayName, localPlayer.avatar, roomId);
+    }
+  }, [roomId, room, localPlayer, joinRoom]);
+
+  // If room is waiting or partner missing, go back to lobby
   useEffect(() => {
     if (room && (room.status === "waiting" || !room.players?.[1])) {
       router.push(`/room/${roomId}/lobby`);
     }
   }, [room, roomId, router]);
 
-  // If game is completed, navigate to complete screen
+  // Game completed → complete screen
   useEffect(() => {
     if (room?.status === "completed") {
       router.push(`/room/${roomId}/complete`);
     }
   }, [room?.status, roomId, router]);
 
-  // Identify players
+  // ─────────── PLAYER IDENTITY (the core fix) ───────────
   const player1 = room?.players?.[0];
   const player2 = room?.players?.[1];
 
-  // Robust player matching by ID or by displayName fallback
-  const isMePlayer1 =
-    localPlayer?.id === player1?.id ||
-    localPlayer?.displayName === player1?.displayName;
+  // Determine which server player "I" am.
+  // The server assigned me a UUID when I created/joined.
+  // My localPlayer.id was reconciled to that UUID in the state_snapshot handler.
+  // Match by reconciled ID first, then by displayName as fallback.
+  const myPlayerId = localPlayer?.id;
 
-  const myPlayer = isMePlayer1 ? player1 : player2;
-  const partner = isMePlayer1 ? player2 : player1;
+  const isMePlayer1 = !!(
+    myPlayerId &&
+    player1 &&
+    (myPlayerId === player1.id || localPlayer?.displayName === player1.displayName)
+  );
+  const isMePlayer2 = !!(
+    myPlayerId &&
+    player2 &&
+    (myPlayerId === player2.id || localPlayer?.displayName === player2.displayName)
+  );
+
+  // If neither matched by ID, fall back to displayName
+  const resolvedIsMeP1 = isMePlayer1 && !isMePlayer2 ? true : !isMePlayer2 && !isMePlayer1 ? true : isMePlayer1;
+
+  const myPlayer = resolvedIsMeP1 ? player1 : player2;
+  const partner = resolvedIsMeP1 ? player2 : player1;
   const partnerName = partner?.displayName ?? "Partner";
 
   const turn = room?.turn;
@@ -90,61 +110,71 @@ export default function PlayPage({ params }: PlayPageProps) {
   const phase = turn?.phase ?? "choosing_category";
   const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
 
-  // Exact role identification:
-  const isPicker =
-    (myPlayer && turn?.pickerPlayerId === myPlayer.id) ||
-    (isMePlayer1 && turn?.pickerPlayerId === player1?.id) ||
-    (!isMePlayer1 && turn?.pickerPlayerId === player2?.id);
-
-  const isAnswerer =
-    (myPlayer && turn?.answererPlayerId === myPlayer.id) ||
-    (isMePlayer1 && turn?.answererPlayerId === player1?.id) ||
-    (!isMePlayer1 && turn?.answererPlayerId === player2?.id) ||
-    (!isPicker && !!player2);
+  // Role determination: compare my actual server-side player ID with the turn's picker/answerer IDs
+  const myServerId = myPlayer?.id;
+  const isPicker = !!(myServerId && turn?.pickerPlayerId === myServerId);
+  const isAnswerer = !!(myServerId && turn?.answererPlayerId === myServerId);
 
   const getRoleDescription = () => {
-    if (phase === "coin_toss") {
-      return "Coin toss ceremony";
-    }
+    if (phase === "coin_toss") return "🪙 Coin toss ceremony";
     if (phase === "choosing_category" || phase === "question_loading") {
       return isPicker
         ? `You are choosing a mood for ${partnerName}`
         : `${partnerName} is choosing a mood for you`;
     }
     if (phase === "answering" || phase === "locked") {
-      return isAnswerer
-        ? "Your turn to answer"
-        : `${partnerName} is answering`;
+      return isAnswerer ? "Your turn to answer" : `${partnerName} is answering`;
     }
     return "Answer revealed";
   };
 
-  const handleSelectCategory = (cat: CategoryId) => {
-    selectCategory(cat);
-  };
+  const handleSelectCategory = useCallback(
+    (cat: CategoryId) => selectCategory(cat),
+    [selectCategory]
+  );
 
-  const handleReact = (reaction: ReactionId) => {
-    sendReaction(reaction);
-    const emojiMap: Record<ReactionId, string> = {
-      heart: "❤️",
-      spark: "✨",
-      soft: "🥺",
-      same: "💯",
-      surprising: "😮",
-    };
-    const popId = `${Date.now()}`;
-    setActiveReactionPopups((prev) => [
-      ...prev,
-      { id: popId, emoji: emojiMap[reaction] || "✨" },
-    ]);
-    setTimeout(() => {
-      setActiveReactionPopups((prev) => prev.filter((p) => p.id !== popId));
-    }, 2000);
-  };
+  const handleReact = useCallback(
+    (reaction: ReactionId) => {
+      sendReaction(reaction);
+      const emojiMap: Record<ReactionId, string> = {
+        heart: "❤️",
+        spark: "✨",
+        soft: "🥺",
+        same: "💯",
+        surprising: "😮",
+      };
+      const popId = `${Date.now()}`;
+      setActiveReactionPopups((prev) => [
+        ...prev,
+        { id: popId, emoji: emojiMap[reaction] || "✨" },
+      ]);
+      setTimeout(() => {
+        setActiveReactionPopups((prev) => prev.filter((p) => p.id !== popId));
+      }, 2000);
+    },
+    [sendReaction]
+  );
 
-  const handleContinueAfterReveal = () => {
+  const handleContinueAfterReveal = useCallback(() => {
     shareAnswer();
-  };
+  }, [shareAnswer]);
+
+  // Debug role state in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development" && turn && myPlayer) {
+      console.log("[PlayPage] Identity debug:", {
+        localPlayerId: localPlayer?.id,
+        localPlayerName: localPlayer?.displayName,
+        myServerId: myPlayer.id,
+        myServerName: myPlayer.displayName,
+        pickerPlayerId: turn.pickerPlayerId,
+        answererPlayerId: turn.answererPlayerId,
+        isPicker,
+        isAnswerer,
+        phase: turn.phase,
+      });
+    }
+  }, [turn?.phase, turn?.pickerPlayerId, turn?.answererPlayerId, isPicker, isAnswerer, localPlayer, myPlayer]);
 
   return (
     <div className="min-h-screen bg-surface-base text-ink-primary flex flex-col justify-between p-5 sm:p-8 relative overflow-hidden">
@@ -208,7 +238,7 @@ export default function PlayPage({ params }: PlayPageProps) {
           />
         )}
 
-        {/* PHASE 1: CHOOSING CATEGORY (Picker chooses mood for Answerer) */}
+        {/* PHASE 1: CHOOSING CATEGORY */}
         {phase === "choosing_category" && (
           <>
             {isPicker ? (
@@ -245,7 +275,7 @@ export default function PlayPage({ params }: PlayPageProps) {
           />
         )}
 
-        {/* PHASE 3 & 4: ANSWERING & LOCKED (Answerer responds privately) */}
+        {/* PHASE 3 & 4: ANSWERING & LOCKED */}
         {(phase === "answering" || phase === "locked") && (
           <>
             {isAnswerer ? (

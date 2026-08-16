@@ -14,7 +14,12 @@ import type {
   GameCompletedPayload,
   RoomSettings,
 } from "@twilight/shared-types";
-import { getSocket, connectSocket } from "../socket/client";
+import {
+  getSocket,
+  connectSocket,
+  areListenersInitialized,
+  markListenersInitialized,
+} from "../socket/client";
 
 interface LocalPlayer {
   id: string;
@@ -143,7 +148,12 @@ export const useGameStore = create<GameStore>()(
           toasts: state.toasts.filter((t) => t.id !== id),
         })),
 
+      // ─────────── SOCKET LISTENERS (registered exactly once) ───────────
       initSocketListeners: () => {
+        // CRITICAL: Only register listeners once per socket lifecycle
+        if (areListenersInitialized()) return;
+        markListenersInitialized();
+
         const socket = connectSocket();
 
         socket.on("connect", () => {
@@ -160,13 +170,16 @@ export const useGameStore = create<GameStore>()(
 
         socket.on("room:state_snapshot", (roomState: RoomState) => {
           set((state) => {
-            // Reconcile localPlayer id with server player id matching display name
+            // Reconcile localPlayer.id with the server-assigned playerId
             const currentLocal = state.localPlayer;
             if (currentLocal && roomState.players) {
               const matched = roomState.players.find(
                 (p) => p && p.displayName === currentLocal.displayName
               );
               if (matched && matched.id !== currentLocal.id) {
+                console.log(
+                  `[Store] Reconciled localPlayer id: ${currentLocal.id} → ${matched.id}`
+                );
                 return {
                   room: roomState,
                   localPlayer: { ...currentLocal, id: matched.id },
@@ -205,7 +218,7 @@ export const useGameStore = create<GameStore>()(
                 ...state.room,
                 turn: {
                   ...state.room.turn,
-                  phase: "question_loading",
+                  phase: "question_loading" as TurnPhase,
                   chosenCategory: category,
                 },
               },
@@ -224,7 +237,7 @@ export const useGameStore = create<GameStore>()(
                   ...state.room,
                   turn: {
                     ...state.room.turn,
-                    phase: "answering",
+                    phase: "answering" as TurnPhase,
                     chosenCategory: questionPayload.category,
                   },
                 }
@@ -260,7 +273,7 @@ export const useGameStore = create<GameStore>()(
                   ...state.room,
                   turn: {
                     ...state.room.turn,
-                    phase: "shared",
+                    phase: "shared" as TurnPhase,
                   },
                 }
               : null,
@@ -294,7 +307,7 @@ export const useGameStore = create<GameStore>()(
                   pickerPlayerId: nextPicker,
                   answererPlayerId: nextAnswerer,
                   round,
-                  phase: "choosing_category",
+                  phase: "choosing_category" as TurnPhase,
                   skipsThisTurn: 0,
                 },
               },
@@ -343,9 +356,11 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
+      // ─────────── ACTIONS ───────────
+
       createRoom: (displayName, avatar, settings, relationshipType) => {
-        const socket = getSocket();
         get().initSocketListeners();
+        const socket = getSocket();
         socket.emit("room:create", {
           displayName,
           avatar,
@@ -355,8 +370,8 @@ export const useGameStore = create<GameStore>()(
       },
 
       joinRoom: (displayName, avatar, roomCode, inviteToken, relationshipType) => {
-        const socket = getSocket();
         get().initSocketListeners();
+        const socket = getSocket();
         socket.emit("room:join", {
           displayName,
           avatar,
@@ -414,7 +429,15 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "twilight-game-store",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => {
+        if (typeof window !== "undefined") return sessionStorage;
+        // SSR fallback
+        return {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        };
+      }),
       partialize: (state) => ({
         localPlayer: state.localPlayer,
       }),

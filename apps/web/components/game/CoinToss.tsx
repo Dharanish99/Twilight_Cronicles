@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { PlayerState } from "@twilight/shared-types";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Crown } from "lucide-react";
 
 interface CoinTossProps {
   player1: PlayerState;
@@ -13,124 +13,259 @@ interface CoinTossProps {
   onFinished?: () => void;
 }
 
+// Particle burst component
+function SparkleParticles({ active }: { active: boolean }) {
+  if (!active) return null;
+  const particles = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * 360;
+    const distance = 80 + Math.random() * 40;
+    const x = Math.cos((angle * Math.PI) / 180) * distance;
+    const y = Math.sin((angle * Math.PI) / 180) * distance;
+    const delay = Math.random() * 0.3;
+    const size = 4 + Math.random() * 6;
+    return { x, y, delay, size, id: i };
+  });
+
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+          animate={{
+            x: p.x,
+            y: p.y,
+            opacity: [1, 1, 0],
+            scale: [0, 1.5, 0],
+          }}
+          transition={{
+            duration: 1.2,
+            delay: p.delay,
+            ease: "easeOut",
+          }}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            width: p.size,
+            height: p.size,
+            background:
+              p.id % 3 === 0
+                ? "var(--accent-ember)"
+                : p.id % 3 === 1
+                ? "var(--cat-playful)"
+                : "var(--cat-emotional)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function CoinToss({
   player1,
   player2,
   winnerId,
   onFinished,
 }: CoinTossProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [showWinnerBanner, setShowWinnerBanner] = useState(false);
+  const [stage, setStage] = useState<"intro" | "spinning" | "landing" | "result">("intro");
 
   const isWinnerP1 = winnerId === player1.id;
   const winner = isWinnerP1 ? player1 : player2;
   const loser = isWinnerP1 ? player2 : player1;
 
-  // If winner is P1, land on 0 / 1800 deg (Front). If P2, land on 180 / 1980 deg (Back).
-  const targetRotation = isWinnerP1 ? 1800 : 1980;
+  // The coin has two faces:
+  // Front (0deg / 360deg multiples) = Player 1
+  // Back (180deg) = Player 2
+  // To land on winner: if P1 wins → end on 0 mod 360 → 1800 (5 full spins)
+  //                     if P2 wins → end on 180 mod 360 → 1980 (5.5 full spins)
+  const finalRotation = isWinnerP1 ? 1800 : 1980;
 
   useEffect(() => {
-    // Start toss animation after a brief 300ms pause
-    const flipTimer = setTimeout(() => {
-      setIsFlipped(true);
-    }, 400);
-
-    // Reveal winner announcement after flip completes
-    const bannerTimer = setTimeout(() => {
-      setShowWinnerBanner(true);
-    }, 2800);
-
-    // Call onFinished if provided
-    const finishTimer = setTimeout(() => {
+    // Stage timeline
+    const t1 = setTimeout(() => setStage("spinning"), 600);
+    const t2 = setTimeout(() => setStage("landing"), 2600);
+    const t3 = setTimeout(() => setStage("result"), 3200);
+    const t4 = setTimeout(() => {
       if (onFinished) onFinished();
-    }, 4000);
+    }, 4500);
 
     return () => {
-      clearTimeout(flipTimer);
-      clearTimeout(bannerTimer);
-      clearTimeout(finishTimer);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
     };
   }, [onFinished]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 text-center px-4">
-      {/* Eyebrow */}
-      <div className="flex flex-col items-center gap-1">
-        <span className="category-label text-[var(--accent-ember)] font-semibold tracking-widest animate-pulse">
-          Coin Toss Ceremony
-        </span>
-        <h2 className="font-display text-3xl sm:text-4xl text-ink-primary font-serif">
-          Deciding First Pick
-        </h2>
-        <p className="text-ink-secondary text-sm">
-          Who will choose the first conversation mood?
-        </p>
+      {/* Header */}
+      <AnimatePresence mode="wait">
+        {stage === "intro" && (
+          <motion.div
+            key="intro-header"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <span className="category-label text-[var(--accent-ember)] font-semibold tracking-widest">
+              ✦ Coin Toss Ceremony ✦
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl text-ink-primary font-serif">
+              Who picks first?
+            </h2>
+          </motion.div>
+        )}
+        {(stage === "spinning" || stage === "landing") && (
+          <motion.div
+            key="spinning-header"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex flex-col items-center gap-1"
+          >
+            <p className="text-sm text-ink-tertiary font-mono tracking-wider animate-pulse">
+              Tossing...
+            </p>
+          </motion.div>
+        )}
+        {stage === "result" && (
+          <motion.div
+            key="result-header"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="flex items-center gap-2">
+              <Crown size={20} className="text-[var(--accent-ember)]" />
+              <span className="category-label text-[var(--accent-ember)] font-bold">
+                Toss Winner
+              </span>
+              <Crown size={20} className="text-[var(--accent-ember)]" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* VS Names */}
+      <div className="flex items-center gap-6 text-sm text-ink-secondary">
+        <motion.span
+          animate={{
+            color: stage === "result" && isWinnerP1 ? "var(--accent-ember)" : undefined,
+            fontWeight: stage === "result" && isWinnerP1 ? 700 : 400,
+          }}
+          className="font-medium"
+        >
+          {player1.displayName}
+        </motion.span>
+        <span className="text-ink-tertiary font-mono text-xs">VS</span>
+        <motion.span
+          animate={{
+            color: stage === "result" && !isWinnerP1 ? "var(--accent-ember)" : undefined,
+            fontWeight: stage === "result" && !isWinnerP1 ? 700 : 400,
+          }}
+          className="font-medium"
+        >
+          {player2.displayName}
+        </motion.span>
       </div>
 
-      {/* 3D Coin Toss Stage */}
+      {/* 3D Coin Stage */}
       <div
-        className="relative my-4"
-        style={{ perspective: "1200px" }}
+        className="relative flex items-center justify-center"
+        style={{ perspective: "1200px", width: 160, height: 180 }}
       >
-        {/* Shadow underneath */}
+        {/* Floor shadow */}
         <motion.div
           animate={{
-            scale: isFlipped ? [1, 0.4, 1.1, 1] : 1,
-            opacity: isFlipped ? [0.4, 0.1, 0.5, 0.4] : 0.4,
+            scale:
+              stage === "spinning"
+                ? [1, 0.3, 0.3, 1.1, 1]
+                : stage === "landing"
+                ? [1, 1.05, 1]
+                : 1,
+            opacity:
+              stage === "spinning"
+                ? [0.35, 0.08, 0.08, 0.4, 0.35]
+                : 0.35,
           }}
-          transition={{ duration: 2.4, ease: [0.25, 1, 0.5, 1] }}
-          className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-28 h-6 rounded-full bg-black/20 blur-md pointer-events-none"
+          transition={{ duration: stage === "spinning" ? 2 : 0.5, ease: "easeInOut" }}
+          className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-24 h-5 rounded-full bg-black/15 blur-lg pointer-events-none"
         />
+
+        {/* Sparkle particles on result */}
+        <SparkleParticles active={stage === "result"} />
 
         {/* 3D Coin */}
         <motion.div
-          initial={{ rotateY: 0, y: 0, scale: 0.9 }}
+          initial={{ rotateY: 0, y: 0, scale: 0.85 }}
           animate={
-            isFlipped
+            stage === "spinning" || stage === "landing" || stage === "result"
               ? {
-                  rotateY: targetRotation,
-                  y: [0, -140, 0],
-                  scale: [0.9, 1.25, 1],
+                  rotateY: finalRotation,
+                  y: [0, -120, -120, 0],
+                  scale: [0.85, 1.15, 1.15, 1.05],
                 }
-              : { rotateY: 0, y: 0, scale: 0.9 }
+              : { rotateY: 0, y: 0, scale: 0.85 }
           }
           transition={{
-            duration: 2.4,
-            ease: [0.25, 1, 0.5, 1],
+            duration: 2.6,
+            ease: [0.22, 1, 0.36, 1],
+            times: [0, 0.3, 0.7, 1],
           }}
-          className="relative w-36 h-36 rounded-full cursor-default"
+          className="relative w-[140px] h-[140px] rounded-full cursor-default"
           style={{ transformStyle: "preserve-3d" }}
         >
-          {/* Side A: Player 1 */}
+          {/* Coin edge (gives the 3D disc thickness illusion) */}
           <div
-            className="absolute inset-0 rounded-full flex flex-col items-center justify-center p-3 border-4 border-[var(--accent-ember)] shadow-2xl bg-surface-elevated"
+            className="absolute inset-[3px] rounded-full"
+            style={{
+              transform: "translateZ(-3px)",
+              background: "linear-gradient(135deg, #b8860b, #daa520, #b8860b)",
+              boxShadow: "inset 0 0 15px rgba(0,0,0,0.3)",
+            }}
+          />
+
+          {/* Side A: Player 1 (Front face) */}
+          <div
+            className="absolute inset-0 rounded-full flex flex-col items-center justify-center"
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
-              boxShadow: "0 0 25px rgba(225, 89, 42, 0.35)",
+              background: "linear-gradient(145deg, #faf5f0, #f5ebe0)",
+              border: "4px solid var(--accent-ember)",
+              boxShadow:
+                stage === "result" && isWinnerP1
+                  ? "0 0 30px rgba(225, 89, 42, 0.5), 0 0 60px rgba(225, 89, 42, 0.2)"
+                  : "0 4px 20px rgba(0,0,0,0.15)",
             }}
           >
-            <div className="w-full h-full rounded-full bg-gradient-to-br from-[var(--accent-ember-tint)] to-[var(--bg-sunken)] flex flex-col items-center justify-center p-2 border border-[var(--accent-ember)]/30">
+            <div className="flex flex-col items-center gap-1">
               <PlayerAvatar avatar={player1.avatar} name={player1.displayName} size="md" />
-              <span className="font-semibold text-xs text-ink-primary truncate max-w-[85px] mt-1">
+              <span className="font-bold text-xs text-ink-primary truncate max-w-[90px]">
                 {player1.displayName}
               </span>
             </div>
           </div>
 
-          {/* Side B: Player 2 (Rotated 180deg) */}
+          {/* Side B: Player 2 (Back face, rotated 180deg) */}
           <div
-            className="absolute inset-0 rounded-full flex flex-col items-center justify-center p-3 border-4 border-[var(--cat-playful)] shadow-2xl bg-surface-elevated"
+            className="absolute inset-0 rounded-full flex flex-col items-center justify-center"
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
               transform: "rotateY(180deg)",
-              boxShadow: "0 0 25px rgba(200, 141, 26, 0.35)",
+              background: "linear-gradient(145deg, #f0f5f5, #e0ebe5)",
+              border: "4px solid var(--cat-playful)",
+              boxShadow:
+                stage === "result" && !isWinnerP1
+                  ? "0 0 30px rgba(200, 141, 26, 0.5), 0 0 60px rgba(200, 141, 26, 0.2)"
+                  : "0 4px 20px rgba(0,0,0,0.15)",
             }}
           >
-            <div className="w-full h-full rounded-full bg-gradient-to-br from-[var(--cat-playful)]/20 to-[var(--bg-sunken)] flex flex-col items-center justify-center p-2 border border-[var(--cat-playful)]/30">
+            <div className="flex flex-col items-center gap-1">
               <PlayerAvatar avatar={player2.avatar} name={player2.displayName} size="md" />
-              <span className="font-semibold text-xs text-ink-primary truncate max-w-[85px] mt-1">
+              <span className="font-bold text-xs text-ink-primary truncate max-w-[90px]">
                 {player2.displayName}
               </span>
             </div>
@@ -139,26 +274,27 @@ export function CoinToss({
       </div>
 
       {/* Result Banner */}
-      <div className="h-16 flex items-center justify-center">
-        {showWinnerBanner ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="flex flex-col items-center gap-1 bg-surface-elevated px-6 py-3 rounded-[var(--radius-md)] border-2 border-[var(--accent-ember)] shadow-lg"
-          >
-            <div className="flex items-center gap-2 text-ink-primary font-semibold text-lg">
-              <Sparkles size={18} className="text-[var(--accent-ember)]" />
-              <span>{winner.displayName} won the toss!</span>
-            </div>
-            <p className="text-xs text-ink-secondary">
-              They will choose the first mood for {loser.displayName}
-            </p>
-          </motion.div>
-        ) : (
-          <p className="text-xs text-ink-tertiary font-mono animate-pulse">
-            Tossing coin in the air...
-          </p>
-        )}
+      <div className="h-20 flex items-center justify-center">
+        <AnimatePresence>
+          {stage === "result" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", damping: 15, stiffness: 200 }}
+              className="flex flex-col items-center gap-2 bg-surface-elevated px-8 py-4 rounded-[var(--radius-lg)] border-2 border-[var(--accent-ember)] shadow-xl"
+            >
+              <div className="flex items-center gap-2 text-ink-primary font-bold text-lg">
+                <Sparkles size={18} className="text-[var(--accent-ember)]" />
+                <span>{winner.displayName} picks first!</span>
+                <Sparkles size={18} className="text-[var(--accent-ember)]" />
+              </div>
+              <p className="text-xs text-ink-secondary max-w-[280px]">
+                They will choose the first conversation mood for{" "}
+                <strong>{loser.displayName}</strong> to answer.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import type {
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let socketInstance: TypedSocket | null = null;
+let listenersInitialized = false;
 
 export function getSocket(): TypedSocket {
   if (!socketInstance) {
@@ -51,7 +52,21 @@ export function connectSocket(): TypedSocket {
 
 export function disconnectSocket(): void {
   if (socketInstance) {
+    socketInstance.removeAllListeners();
     socketInstance.disconnect();
     socketInstance = null;
+    listenersInitialized = false;
   }
+}
+
+/**
+ * Returns true if game-event listeners have already been registered.
+ * Call markListenersInitialized() after registering them once.
+ */
+export function areListenersInitialized(): boolean {
+  return listenersInitialized;
+}
+
+export function markListenersInitialized(): void {
+  listenersInitialized = true;
 }

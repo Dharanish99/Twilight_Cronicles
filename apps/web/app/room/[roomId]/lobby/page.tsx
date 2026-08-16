@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, use, useState } from "react";
+import { useEffect, use, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings as SettingsIcon, Play, Copy, Check, UserPlus } from "lucide-react";
@@ -18,6 +18,7 @@ interface LobbyPageProps {
 export default function LobbyPage({ params }: LobbyPageProps) {
   const { roomId } = use(params);
   const router = useRouter();
+  const initRef = useRef(false);
 
   const {
     room,
@@ -34,15 +35,19 @@ export default function LobbyPage({ params }: LobbyPageProps) {
 
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Initialize socket on mount and join if room not present
+  // Initialize socket ONCE
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
     initSocketListeners();
-    if (!room && roomId) {
-      const name = localPlayer?.displayName || "Player";
-      const avatar = localPlayer?.avatar || "ember";
-      joinRoom(name, avatar, roomId);
+  }, [initSocketListeners]);
+
+  // Re-join room if we arrived without state (page refresh)
+  useEffect(() => {
+    if (!room && roomId && localPlayer) {
+      joinRoom(localPlayer.displayName, localPlayer.avatar, roomId);
     }
-  }, [roomId, room, localPlayer, initSocketListeners, joinRoom]);
+  }, [roomId, room, localPlayer, joinRoom]);
 
   // CRITICAL FIX: Only navigate to play screen when game is explicitly started and both players joined
   useEffect(() => {
