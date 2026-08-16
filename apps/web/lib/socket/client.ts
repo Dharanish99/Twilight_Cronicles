@@ -13,8 +13,19 @@ let listenersInitialized = false;
 
 export function getSocket(): TypedSocket {
   if (!socketInstance) {
-    const url =
-      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3001";
+    let url = process.env.NEXT_PUBLIC_REALTIME_URL;
+
+    if (!url) {
+      if (typeof window !== "undefined") {
+        const isLocal =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+        // On localhost connect directly to 3001, on ngrok/remote connect to same origin via proxy
+        url = isLocal ? "http://localhost:3001" : window.location.origin;
+      } else {
+        url = "http://localhost:3001";
+      }
+    }
 
     socketInstance = io(url, {
       autoConnect: false,
@@ -22,7 +33,7 @@ export function getSocket(): TypedSocket {
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
       withCredentials: true,
     });
 

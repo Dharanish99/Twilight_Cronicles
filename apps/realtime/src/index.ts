@@ -17,7 +17,8 @@ const PORT = parseInt(process.env.PORT ?? "3001", 10);
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:3000";
 
 const app = express();
-app.use(cors({ origin: WEB_ORIGIN, credentials: true }));
+// Allow any origin (including ngrok, localhost, custom domains) with credentials support
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Health check
@@ -33,7 +34,14 @@ export const io = new Server<
   InterServerEvents,
   SocketData
 >(httpServer, {
-  cors: { origin: "*", methods: ["GET", "POST"], credentials: true },
+  cors: {
+    origin: (origin, callback) => {
+      // Allow all incoming origins dynamically for ngrok & remote access
+      callback(null, true);
+    },
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
   pingTimeout: 20000,
   pingInterval: 10000,
 });
