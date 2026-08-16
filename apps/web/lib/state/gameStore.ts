@@ -312,6 +312,17 @@ export const useGameStore = create<GameStore>()(
 
         socket.on("reaction:received", ({ from, reaction }: { from: string; reaction: ReactionId }) => {
           get().addReaction(from, reaction);
+          // Show toast with player name and emoji
+          const state = get();
+          const emojiMap: Record<string, string> = {
+            heart: "❤️", spark: "✨", soft: "🥺", same: "💯", surprising: "😮",
+          };
+          const emoji = emojiMap[reaction] || "✨";
+          // Find who reacted by playerId
+          const reactor = state.room?.players.find((p) => p && p.id === from);
+          if (reactor && from !== state.myServerId) {
+            get().addToast(`${reactor.displayName} reacted ${emoji}`, "success");
+          }
         });
 
         socket.on("player:disconnected", ({ playerId }: { playerId: string }) => {
