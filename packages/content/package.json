@@ -1,0 +1,15 @@
+{
+  "name": "@twilight/content",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./index.js",
+  "scripts": {
+    "seed": "tsx seed.ts"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.0.0",
+    "prisma": "^5.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}

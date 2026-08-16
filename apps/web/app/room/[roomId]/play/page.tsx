@@ -1,0 +1,285 @@
+"use client";
+
+import { useEffect, use, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Settings as SettingsIcon, Flag } from "lucide-react";
+import type { CategoryId, ReactionId } from "@twilight/shared-types";
+import { useGameStore } from "@/lib/state/gameStore";
+import { CategoryGrid } from "@/components/game/CategoryGrid";
+import { QuestionCard } from "@/components/game/QuestionCard";
+import { WaitingScreen } from "@/components/game/WaitingScreen";
+import { RevealCard } from "@/components/game/RevealCard";
+import { TurnIndicator } from "@/components/ui/TurnIndicator";
+import { ConnectionIndicator } from "@/components/ui/ConnectionIndicator";
+import { ToastContainer } from "@/components/ui/Toast";
+
+interface PlayPageProps {
+  params: Promise<{ roomId: string }>;
+}
+
+export default function PlayPage({ params }: PlayPageProps) {
+  const { roomId } = use(params);
+  const router = useRouter();
+
+  const {
+    room,
+    localPlayer,
+    connectionStatus,
+    currentQuestion,
+    sharedAnswer,
+    draftText,
+    isDraftLocked,
+    selectCategory,
+    sendDraftUpdate,
+    lockAnswer,
+    shareAnswer,
+    skipQuestion,
+    sendReaction,
+    joinRoom,
+    initSocketListeners,
+    toasts,
+    removeToast,
+  } = useGameStore();
+
+  const [activeReactionPopups, setActiveReactionPopups] = useState<
+    { id: string; emoji: string }[]
+  >([]);
+
+  // Initialize socket on mount if room state missing
+  useEffect(() => {
+    initSocketListeners();
+    if (!room && roomId) {
+      const name = localPlayer?.displayName || "Player";
+      const avatar = localPlayer?.avatar || "ember";
+      joinRoom(name, avatar, roomId);
+    }
+  }, [roomId, room, localPlayer, initSocketListeners, joinRoom]);
+
+  // CRITICAL FIX: If room is not active or player 2 hasn't joined, redirect back to lobby
+  useEffect(() => {
+    if (room && (room.status === "waiting" || !room.players?.[1])) {
+      router.push(`/room/${roomId}/lobby`);
+    }
+  }, [room, roomId, router]);
+
+  // If game is completed, navigate to complete screen
+  useEffect(() => {
+    if (room?.status === "completed") {
+      router.push(`/room/${roomId}/complete`);
+    }
+  }, [room?.status, roomId, router]);
+
+  // Identify players
+  const player1 = room?.players?.[0];
+  const player2 = room?.players?.[1];
+
+  const isPlayer1 = player1?.displayName === localPlayer?.displayName;
+  const myPlayerId = isPlayer1 ? player1?.id : player2?.id;
+  const partner = isPlayer1 ? player2 : player1;
+  const partnerName = partner?.displayName ?? "Partner";
+
+  const turn = room?.turn;
+  const round = turn?.round ?? 1;
+  const totalRounds = room?.settings?.rounds ?? 6;
+
+  // Opposite person chooses logic:
+  const isPicker =
+    turn?.pickerPlayerId === myPlayerId ||
+    (turn?.pickerPlayerId === "host" && isPlayer1) ||
+    (turn?.pickerPlayerId === "guest" && !isPlayer1);
+
+  const isAnswerer =
+    turn?.answererPlayerId === myPlayerId ||
+    (!isPicker && !!player2);
+
+  const phase = turn?.phase ?? "choosing_category";
+  const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
+
+  const getRoleDescription = () => {
+    if (phase === "choosing_category" || phase === "question_loading") {
+      return isPicker
+        ? `You are choosing a mood for ${partnerName}`
+        : `${partnerName} is choosing a mood for you`;
+    }
+    if (phase === "answering" || phase === "locked") {
+      return isAnswerer
+        ? "Your turn to answer"
+        : `${partnerName} is answering`;
+    }
+    return "Answer revealed";
+  };
+
+  const handleSelectCategory = (cat: CategoryId) => {
+    selectCategory(cat);
+  };
+
+  const handleReact = (reaction: ReactionId) => {
+    sendReaction(reaction);
+    const emojiMap: Record<ReactionId, string> = {
+      heart: "❤️",
+      spark: "✨",
+      soft: "🥺",
+      same: "💯",
+      surprising: "😮",
+    };
+    const popId = `${Date.now()}`;
+    setActiveReactionPopups((prev) => [
+      ...prev,
+      { id: popId, emoji: emojiMap[reaction] || "✨" },
+    ]);
+    setTimeout(() => {
+      setActiveReactionPopups((prev) => prev.filter((p) => p.id !== popId));
+    }, 2000);
+  };
+
+  const handleContinueAfterReveal = () => {
+    shareAnswer();
+  };
+
+  return (
+    <div className="min-h-screen bg-surface-base text-ink-primary flex flex-col justify-between p-5 sm:p-8 relative overflow-hidden">
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
+
+      {/* Real-time Reaction Floating Bubbles */}
+      <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+        {activeReactionPopups.map((p) => (
+          <span
+            key={p.id}
+            className="text-6xl animate-bounce duration-1000 opacity-90"
+          >
+            {p.emoji}
+          </span>
+        ))}
+      </div>
+
+      {/* Header */}
+      <header className="max-w-2xl mx-auto w-full flex flex-col gap-3 py-2 border-b border-theme-subtle pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="font-display font-medium text-lg text-ink-primary">
+              Twilight <span className="text-[var(--accent-ember)]">Chronicles</span>
+            </Link>
+            <ConnectionIndicator status={connectionStatus} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/report?roomId=${roomId}&questionId=${currentQuestion?.questionId ?? ""}`}
+              className="p-2 rounded-full hover:bg-surface-sunken transition-colors text-ink-tertiary hover:text-[var(--danger)]"
+              aria-label="Report Question"
+            >
+              <Flag size={18} />
+            </Link>
+            <Link
+              href={`/room/${roomId}/settings`}
+              className="p-2 rounded-full hover:bg-surface-sunken transition-colors text-ink-tertiary hover:text-ink-primary"
+              aria-label="Room Settings"
+            >
+              <SettingsIcon size={18} />
+            </Link>
+          </div>
+        </div>
+
+        <TurnIndicator
+          round={round}
+          totalRounds={totalRounds}
+          roleDescription={getRoleDescription()}
+        />
+      </header>
+
+      {/* Main Interactive Stage */}
+      <main className="max-w-2xl mx-auto w-full my-auto py-8">
+        {/* PHASE 1: CHOOSING CATEGORY (Picker chooses mood for Answerer) */}
+        {phase === "choosing_category" && (
+          <>
+            {isPicker ? (
+              <CategoryGrid
+                enabledCategories={room?.settings?.categories}
+                onSelect={handleSelectCategory}
+                partnerName={partnerName}
+              />
+            ) : (
+              <WaitingScreen
+                partnerName={partnerName}
+                phase={phase}
+                round={round}
+                totalRounds={totalRounds}
+                customMessage={`${partnerName} is choosing a mood for you…`}
+              />
+            )}
+          </>
+        )}
+
+        {/* PHASE 2: QUESTION LOADING */}
+        {phase === "question_loading" && (
+          <WaitingScreen
+            partnerName={partnerName}
+            phase={phase}
+            chosenCategory={chosenCategory}
+            round={round}
+            totalRounds={totalRounds}
+            customMessage={
+              isAnswerer
+                ? `Preparing a question in ${chosenCategory ?? "mood"} for you…`
+                : `${partnerName} will answer a question in ${chosenCategory ?? "mood"}…`
+            }
+          />
+        )}
+
+        {/* PHASE 3 & 4: ANSWERING & LOCKED (Answerer responds privately) */}
+        {(phase === "answering" || phase === "locked") && (
+          <>
+            {isAnswerer ? (
+              <QuestionCard
+                round={round}
+                totalRounds={totalRounds}
+                category={currentQuestion?.category ?? chosenCategory ?? "deep"}
+                question={currentQuestion?.text ?? "Loading question..."}
+                state={isDraftLocked ? "locked" : "typing"}
+                draft={draftText}
+                onDraftChange={sendDraftUpdate}
+                onLock={lockAnswer}
+                onShare={() => shareAnswer()}
+                onSkip={skipQuestion}
+                onUnlockEdit={() => lockAnswer()}
+                partnerName={partnerName}
+                followUpPrompt={currentQuestion?.followUpPrompt}
+              />
+            ) : (
+              <WaitingScreen
+                partnerName={partnerName}
+                phase={phase}
+                chosenCategory={chosenCategory}
+                round={round}
+                totalRounds={totalRounds}
+                customMessage={`${partnerName} is answering the ${chosenCategory ?? "selected"} mood question…`}
+              />
+            )}
+          </>
+        )}
+
+        {/* PHASE 5: SHARED / REVEAL */}
+        {phase === "shared" && sharedAnswer && (
+          <RevealCard
+            question={sharedAnswer.text}
+            category={sharedAnswer.category}
+            answer={sharedAnswer.answerText}
+            answeredBy={{
+              name: sharedAnswer.answeredBy.name,
+              avatar: sharedAnswer.answeredBy.avatar as any,
+            }}
+            onReact={handleReact}
+            onContinue={handleContinueAfterReveal}
+          />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="max-w-2xl mx-auto w-full text-center py-4 text-xs text-ink-tertiary flex justify-between items-center">
+        <span>Room Code: <strong className="font-mono">{roomId}</strong></span>
+        <span>{room?.settings?.intensityCeiling ?? "Balanced"} Mode</span>
+      </footer>
+    </div>
+  );
+}

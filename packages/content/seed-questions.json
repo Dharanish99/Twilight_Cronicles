@@ -1,0 +1,2868 @@
+[
+  {
+    "id": "deep-001",
+    "text": "What is a belief you hold that most people you know would disagree with?",
+    "category": "deep",
+    "intensity": 3,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "opinion",
+      "values"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-002",
+    "text": "What is something you understand now that you wish you had understood ten years ago?",
+    "category": "deep",
+    "intensity": 3,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "growth",
+      "reflection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-003",
+    "text": "When do you feel most like yourself?",
+    "category": "deep",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "identity",
+      "self"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-004",
+    "text": "What is a version of failure you have quietly made peace with?",
+    "category": "deep",
+    "intensity": 4,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "resilience",
+      "failure"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-005",
+    "text": "What do you think is the most misunderstood thing about you?",
+    "category": "deep",
+    "intensity": 3,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "perception",
+      "identity"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-006",
+    "text": "What is a decision you made that changed your life in a way you did not expect?",
+    "category": "deep",
+    "intensity": 4,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "decisions",
+      "life"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-007",
+    "text": "What would you do differently if you knew no one would judge you?",
+    "category": "deep",
+    "intensity": 3,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "freedom",
+      "authenticity"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-008",
+    "text": "What is something you have stopped explaining to people because it takes too long?",
+    "category": "deep",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "self",
+      "complexity"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-009",
+    "text": "Is there a version of your life you actively chose to leave behind?",
+    "category": "deep",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "choice",
+      "path"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-010",
+    "text": "What is the most honest thing you have said to someone this year?",
+    "category": "deep",
+    "intensity": 4,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "honesty",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-011",
+    "text": "What is a question you keep coming back to that you have not answered yet?",
+    "category": "deep",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "uncertainty",
+      "meaning"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-012",
+    "text": "What is something about the world you think is broken that almost no one talks about?",
+    "category": "deep",
+    "intensity": 5,
+    "minRound": 4,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "world",
+      "values"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 90,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "deep-013",
+    "text": "When was the last time you changed your mind about something important?",
+    "category": "deep",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "growth",
+      "humility"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-001",
+    "text": "What is the most confident you have ever been about something you were completely wrong about?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "confidence"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-002",
+    "text": "If you had to give a TED talk tomorrow with zero prep, what is it on?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "skills"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-003",
+    "text": "What is a food combination you will defend to the death?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "food",
+      "humor"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-004",
+    "text": "What is the most useless talent you have that you are secretly proud of?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "quirks"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-005",
+    "text": "What is your go-to move when you do not know what you are doing but need to look confident?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "life"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-006",
+    "text": "What is the worst advice you have ever confidently given?",
+    "category": "playful",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "stories"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-007",
+    "text": "What is a phrase you have said out loud that you wish you could immediately take back?",
+    "category": "playful",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "embarrassment"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-008",
+    "text": "If your life had a laugh track, when would it go off most often?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "self-awareness"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-009",
+    "text": "What is a completely irrational hill you will die on?",
+    "category": "playful",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "opinions"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-010",
+    "text": "What is the most unhinged thing you have ever done because you were bored?",
+    "category": "playful",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "boredom"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-011",
+    "text": "If someone wrote a satirical profile of you, what would the headline be?",
+    "category": "playful",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "self-awareness"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "playful-012",
+    "text": "What is the most low-stakes situation where you have felt genuine pressure to perform?",
+    "category": "playful",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "anxiety"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-001",
+    "text": "What is a small thing someone did for you that you still think about?",
+    "category": "emotional",
+    "intensity": 3,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "gratitude",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-002",
+    "text": "What is something you have never said out loud to the person who deserved to hear it?",
+    "category": "emotional",
+    "intensity": 4,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "unsaid",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-003",
+    "text": "Who taught you what love is supposed to look like?",
+    "category": "emotional",
+    "intensity": 4,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "love",
+      "family",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-004",
+    "text": "What is something you are still carrying that you do not talk about?",
+    "category": "emotional",
+    "intensity": 5,
+    "minRound": 4,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "vulnerability",
+      "inner life"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 90,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-005",
+    "text": "What is a compliment that actually got through to you?",
+    "category": "emotional",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "connection",
+      "affirmation"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-006",
+    "text": "When was the last time you felt genuinely understood?",
+    "category": "emotional",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "connection",
+      "belonging"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-007",
+    "text": "What do you do when you feel alone that you have never told anyone?",
+    "category": "emotional",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "loneliness",
+      "coping"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-008",
+    "text": "What is a version of yourself from the past that you would like to say something to?",
+    "category": "emotional",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "self",
+      "growth",
+      "past"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-009",
+    "text": "What is something you wish you could have said but did not, and now the moment is gone?",
+    "category": "emotional",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "regret",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-010",
+    "text": "What is an emotion you feel regularly that you do not have a good word for?",
+    "category": "emotional",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "feelings",
+      "language"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-011",
+    "text": "Who in your life do you feel like you have never fully shown yourself to?",
+    "category": "emotional",
+    "intensity": 5,
+    "minRound": 4,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "vulnerability",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 90,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "emotional-012",
+    "text": "What is a way you have been cared for that surprised you?",
+    "category": "emotional",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "care",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-001",
+    "text": "What is a habit you have that you think no one has noticed?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "habits",
+      "quirks"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-002",
+    "text": "What is something you are weirdly good at that has never once been useful?",
+    "category": "curious",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "skills",
+      "humor"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-003",
+    "text": "What is a rule you secretly think everyone should follow?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "opinions",
+      "values"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-004",
+    "text": "What is a topic you know way more about than most people would expect?",
+    "category": "curious",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "knowledge",
+      "quirks"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-005",
+    "text": "What is a small thing that consistently makes your day better?",
+    "category": "curious",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "joy",
+      "habits"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-006",
+    "text": "What is a question you have never been asked that you have always wanted to answer?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "self",
+      "meta"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-007",
+    "text": "What do you notice about places that most people walk past without seeing?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "observation",
+      "attention"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-008",
+    "text": "What is something you changed your daily routine to avoid but will not admit?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "habits",
+      "humor"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-009",
+    "text": "What is a thing you believe that you cannot fully explain?",
+    "category": "curious",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "beliefs",
+      "intuition"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-010",
+    "text": "What is a mundane thing you find genuinely beautiful?",
+    "category": "curious",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "beauty",
+      "observation"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-011",
+    "text": "What is something you learned recently that changed how you see something ordinary?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "learning",
+      "perspective"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "curious-012",
+    "text": "What is a social convention you follow but genuinely do not understand the point of?",
+    "category": "curious",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "society",
+      "observations"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-001",
+    "text": "What is a smell that instantly takes you back somewhere?",
+    "category": "memories",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "senses",
+      "nostalgia"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-002",
+    "text": "What is the most trouble you ever got into as a kid?",
+    "category": "memories",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "childhood",
+      "humor"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-003",
+    "text": "What is a memory you have that you are not sure is fully real anymore?",
+    "category": "memories",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "memory",
+      "uncertainty"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-004",
+    "text": "What is a place that felt like home that you cannot go back to?",
+    "category": "memories",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "home",
+      "loss",
+      "nostalgia"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-005",
+    "text": "What is the best day you remember that no one else would find remarkable?",
+    "category": "memories",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "ordinary",
+      "joy"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-006",
+    "text": "What is something from your childhood you kept doing long after you should have outgrown it?",
+    "category": "memories",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "childhood",
+      "humor",
+      "quirks"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-007",
+    "text": "What is a moment you knew something important was ending, even as it was still happening?",
+    "category": "memories",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "change",
+      "endings",
+      "emotion"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-008",
+    "text": "What is a compliment or criticism from someone a long time ago that you still hear in your head?",
+    "category": "memories",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "influence",
+      "words"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-009",
+    "text": "What is the bravest thing you did before you knew it was brave?",
+    "category": "memories",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "courage",
+      "reflection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-010",
+    "text": "What is a song that is completely owned by a specific memory?",
+    "category": "memories",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "music",
+      "nostalgia"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-011",
+    "text": "What is a phase of your life that felt endless at the time but now feels impossibly short?",
+    "category": "memories",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "time",
+      "reflection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "memories-012",
+    "text": "What is something you did out of character that you have never quite explained, even to yourself?",
+    "category": "memories",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "mystery",
+      "self"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-001",
+    "text": "If your life had a next chapter title, what would it be?",
+    "category": "future",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "aspirations",
+      "narrative"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-002",
+    "text": "What is a version of your life you almost chose instead?",
+    "category": "future",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "choices",
+      "paths"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-003",
+    "text": "What do you want to be true about your life in five years?",
+    "category": "future",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "goals",
+      "hope"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-004",
+    "text": "What is something you are building slowly that no one sees yet?",
+    "category": "future",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "ambition",
+      "hidden"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-005",
+    "text": "What is the version of yourself you are most afraid of becoming?",
+    "category": "future",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "fear",
+      "growth"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-006",
+    "text": "What is something you want to try that you keep putting off because you do not feel ready?",
+    "category": "future",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "procrastination",
+      "dreams"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-007",
+    "text": "What would you do if you stopped waiting for the right time?",
+    "category": "future",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "action",
+      "timing"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-008",
+    "text": "What is something you hope to unlearn?",
+    "category": "future",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "growth",
+      "change"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-009",
+    "text": "If a close friend described who you will be in ten years, what would you want them to say?",
+    "category": "future",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "legacy",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-010",
+    "text": "What is a habit you are trying to build that still feels fragile?",
+    "category": "future",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "habits",
+      "growth"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-011",
+    "text": "What is something you know you will regret not doing while you still can?",
+    "category": "future",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "regret",
+      "time"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "future-012",
+    "text": "What does enough look like for you?",
+    "category": "future",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "contentment",
+      "values"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-001",
+    "text": "If you woke up tomorrow with ten million dollars but could never explain where it came from, what would you do first?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "hypothetical",
+      "money"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-002",
+    "text": "You can instantly become fluent in one skill. What did you pick, and why is it a strange choice?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "hypothetical",
+      "skills"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-003",
+    "text": "What is a completely normal thing you do that would look suspicious on a security camera?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "habits"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-004",
+    "text": "If your browser search history were visible to the person you are talking to right now, what is the first thing you would try to delete?",
+    "category": "chaotic",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "embarrassment"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-005",
+    "text": "What is the most unhinged plan you have actually executed and would execute again?",
+    "category": "chaotic",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "decisions"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-006",
+    "text": "What skill are you absolutely convinced you have that all evidence suggests you do not?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "self-delusion"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-007",
+    "text": "What is a lie you have told yourself so many times it started to feel true?",
+    "category": "chaotic",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "self-deception",
+      "honesty"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-008",
+    "text": "What is the most random thing you are genuinely passionate about?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "passions",
+      "quirks"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-009",
+    "text": "What would your most chaotic character trait be if you were the antagonist in a story?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "character"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-010",
+    "text": "What is a plan you had no business executing that somehow worked out?",
+    "category": "chaotic",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "luck"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-011",
+    "text": "If you could only speak in one type of energy for the rest of your life, what is it?",
+    "category": "chaotic",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "hypothetical",
+      "personality"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "chaotic-012",
+    "text": "What is a completely serious opinion you have that starts sounding crazier the more you explain it?",
+    "category": "chaotic",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "opinions",
+      "humor"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-001",
+    "text": "Would you rather always know when someone is lying to you, or always be able to tell when someone truly means what they say?",
+    "category": "wouldYouRather",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "honesty",
+      "perception"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-002",
+    "text": "Would you rather relive your best year on repeat, or keep moving forward and never get it back?",
+    "category": "wouldYouRather",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "time",
+      "nostalgia"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-003",
+    "text": "Would you rather know exactly when you will die, or never know but be guaranteed it will not be sudden?",
+    "category": "wouldYouRather",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends"
+    ],
+    "tags": [
+      "mortality",
+      "certainty"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-004",
+    "text": "Would you rather be famous for something you are embarrassed by, or anonymous for something you are proud of?",
+    "category": "wouldYouRather",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "fame",
+      "pride"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-005",
+    "text": "Would you rather have everyone agree with you but never argue back, or have someone always challenge you but always be right?",
+    "category": "wouldYouRather",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "relationships",
+      "intellect"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-006",
+    "text": "Would you rather be able to read every person's first impression of you, or their last?",
+    "category": "wouldYouRather",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "perception",
+      "relationships"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-007",
+    "text": "Would you rather always have the right words in a difficult moment, or always know what someone needs without them saying it?",
+    "category": "wouldYouRather",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "communication",
+      "empathy"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-008",
+    "text": "Would you rather go back and relive one perfect moment, or jump forward and see one moment you are looking forward to?",
+    "category": "wouldYouRather",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "time",
+      "hope"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-009",
+    "text": "Would you rather be deeply understood by one person, or broadly liked by everyone?",
+    "category": "wouldYouRather",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "connection",
+      "belonging"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-010",
+    "text": "Would you rather always be early and waiting, or always be slightly late and arriving?",
+    "category": "wouldYouRather",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "personality",
+      "time"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-011",
+    "text": "Would you rather have your inner monologue be audible to whoever is near you, or have everyone's inner monologue audible to you?",
+    "category": "wouldYouRather",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "humor",
+      "thoughts"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "wyr-012",
+    "text": "Would you rather be loved for who you are or admired for who you could be?",
+    "category": "wouldYouRather",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "love",
+      "aspiration"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-001",
+    "text": "What is something about our friendship you have never actually told me?",
+    "category": "friendship",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "honesty",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-002",
+    "text": "What is a moment you knew we would stay friends for a long time?",
+    "category": "friendship",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "memories",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-003",
+    "text": "What is something I do that you have never mentioned because you thought I knew?",
+    "category": "friendship",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "honesty",
+      "perception"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-004",
+    "text": "What is the part of your life I know the least about?",
+    "category": "friendship",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "connection",
+      "unknown"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-005",
+    "text": "When have I surprised you?",
+    "category": "friendship",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "perception",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-006",
+    "text": "What is something you have always wanted to ask me but kept putting off?",
+    "category": "friendship",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "curiosity",
+      "honesty"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-007",
+    "text": "When did you feel closest to me?",
+    "category": "friendship",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "connection",
+      "intimacy"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-008",
+    "text": "What is something you have defended about me that you were secretly unsure about?",
+    "category": "friendship",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "loyalty",
+      "honesty"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-009",
+    "text": "What do you think I am most wrong about?",
+    "category": "friendship",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "honesty",
+      "challenge"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-010",
+    "text": "What is something you have learned from me that I probably do not know I taught you?",
+    "category": "friendship",
+    "intensity": 3,
+    "minRound": 2,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "influence",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 60,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-011",
+    "text": "What is a time you needed me and did not ask?",
+    "category": "friendship",
+    "intensity": 4,
+    "minRound": 3,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "vulnerability",
+      "support"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 75,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "friendship-012",
+    "text": "What do you hope stays the same about us?",
+    "category": "friendship",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends"
+    ],
+    "tags": [
+      "future",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "standard",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-001",
+    "text": "What is something people usually get wrong about you at first?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "perception",
+      "first impressions"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-002",
+    "text": "What is a small thing that instantly makes you trust someone?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "trust",
+      "connection"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-003",
+    "text": "What is something you are into right now that you are happy to talk about for a while?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "interests",
+      "conversation"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-004",
+    "text": "What is your version of a perfect day?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "lifestyle",
+      "preferences"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-005",
+    "text": "What is something you do every week that most people would not guess?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "habits",
+      "quirks"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-006",
+    "text": "What is a place that made you feel immediately at home?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "belonging",
+      "place"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-007",
+    "text": "What is something you wish people asked you more?",
+    "category": "gettingToKnowYou",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "curiosity",
+      "self"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-008",
+    "text": "What is your most reliable mood lifter?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "wellbeing",
+      "habits"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-009",
+    "text": "What is a skill you have been quietly picking up?",
+    "category": "gettingToKnowYou",
+    "intensity": 1,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "growth",
+      "learning"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 30,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-010",
+    "text": "What is one thing you would want someone to know about you after a first conversation?",
+    "category": "gettingToKnowYou",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "identity",
+      "first impressions"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-011",
+    "text": "What is something you are proud of that rarely comes up?",
+    "category": "gettingToKnowYou",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "pride",
+      "self"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  },
+  {
+    "id": "gtky-012",
+    "text": "What is something that made you who you are that you rarely talk about?",
+    "category": "gettingToKnowYou",
+    "intensity": 2,
+    "minRound": 1,
+    "relationshipFit": [
+      "friends",
+      "more_than_friends",
+      "just_meeting"
+    ],
+    "tags": [
+      "identity",
+      "background"
+    ],
+    "status": "published",
+    "estimatedAnswerSeconds": 45,
+    "skipSensitivity": "low",
+    "contentWarningLevel": "none",
+    "timesShown": 0,
+    "timesCompleted": 0,
+    "timesSkipped": 0,
+    "reportCount": 0
+  }
+]

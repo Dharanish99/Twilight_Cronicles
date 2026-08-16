@@ -1,0 +1,407 @@
+"use client";
+
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type {
+  RoomState,
+  PlayerState,
+  TurnPhase,
+  CategoryId,
+  AvatarId,
+  ReactionId,
+  QuestionPayload,
+  AnswerSharedPayload,
+  GameCompletedPayload,
+  RoomSettings,
+} from "@twilight/shared-types";
+import { getSocket, connectSocket } from "../socket/client";
+
+interface LocalPlayer {
+  id: string;
+  displayName: string;
+  avatar: AvatarId;
+  relationshipType?: string;
+  sessionToken?: string;
+}
+
+interface ToastMessage {
+  id: string;
+  message: string;
+  variant?: "success" | "neutral";
+}
+
+interface GameStore {
+  localPlayer: LocalPlayer | null;
+  setLocalPlayer: (player: LocalPlayer) => void;
+
+  connectionStatus: "connected" | "reconnecting" | "disconnected";
+  setConnectionStatus: (status: "connected" | "reconnecting" | "disconnected") => void;
+
+  room: RoomState | null;
+  setRoom: (room: RoomState | null) => void;
+
+  currentQuestion: QuestionPayload | null;
+  setCurrentQuestion: (q: QuestionPayload | null) => void;
+
+  sharedAnswer: AnswerSharedPayload | null;
+  setSharedAnswer: (ans: AnswerSharedPayload | null) => void;
+
+  draftText: string;
+  setDraftText: (text: string) => void;
+  isDraftLocked: boolean;
+  setIsDraftLocked: (locked: boolean) => void;
+
+  activeReactions: { from: string; reaction: ReactionId; id: string }[];
+  addReaction: (from: string, reaction: ReactionId) => void;
+
+  gameCompletedData: GameCompletedPayload | null;
+  setGameCompletedData: (data: GameCompletedPayload | null) => void;
+
+  toasts: ToastMessage[];
+  addToast: (message: string, variant?: "success" | "neutral") => void;
+  removeToast: (id: string) => void;
+
+  initSocketListeners: () => void;
+  createRoom: (
+    displayName: string,
+    avatar: AvatarId,
+    settings: RoomSettings,
+    relationshipType?: string
+  ) => void;
+  joinRoom: (
+    displayName: string,
+    avatar: AvatarId,
+    roomCode?: string,
+    inviteToken?: string,
+    relationshipType?: string
+  ) => void;
+  toggleReady: () => void;
+  startGame: () => void;
+  selectCategory: (category: CategoryId) => void;
+  sendDraftUpdate: (text: string) => void;
+  lockAnswer: () => void;
+  shareAnswer: () => void;
+  skipQuestion: () => void;
+  sendReaction: (reaction: ReactionId) => void;
+  resetGame: () => void;
+}
+
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
+      localPlayer: null,
+      setLocalPlayer: (player) => set({ localPlayer: player }),
+
+      connectionStatus: "disconnected",
+      setConnectionStatus: (status) => set({ connectionStatus: status }),
+
+      room: null,
+      setRoom: (room) => set({ room }),
+
+      currentQuestion: null,
+      setCurrentQuestion: (currentQuestion) => set({ currentQuestion }),
+
+      sharedAnswer: null,
+      setSharedAnswer: (sharedAnswer) => set({ sharedAnswer }),
+
+      draftText: "",
+      setDraftText: (draftText) => set({ draftText }),
+
+      isDraftLocked: false,
+      setIsDraftLocked: (isDraftLocked) => set({ isDraftLocked }),
+
+      activeReactions: [],
+      addReaction: (from, reaction) => {
+        const id = `${Date.now()}-${Math.random()}`;
+        set((state) => ({
+          activeReactions: [...state.activeReactions, { from, reaction, id }],
+        }));
+        setTimeout(() => {
+          set((state) => ({
+            activeReactions: state.activeReactions.filter((r) => r.id !== id),
+          }));
+        }, 3000);
+      },
+
+      gameCompletedData: null,
+      setGameCompletedData: (data) => set({ gameCompletedData: data }),
+
+      toasts: [],
+      addToast: (message, variant = "neutral") => {
+        const id = `${Date.now()}-${Math.random()}`;
+        set((state) => ({
+          toasts: [...state.toasts, { id, message, variant }],
+        }));
+        setTimeout(() => {
+          set((state) => ({
+            toasts: state.toasts.filter((t) => t.id !== id),
+          }));
+        }, 4000);
+      },
+      removeToast: (id) =>
+        set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id),
+        })),
+
+      initSocketListeners: () => {
+        const socket = connectSocket();
+
+        socket.on("connect", () => {
+          set({ connectionStatus: "connected" });
+        });
+
+        socket.on("disconnect", () => {
+          set({ connectionStatus: "disconnected" });
+        });
+
+        socket.on("connect_error", () => {
+          set({ connectionStatus: "reconnecting" });
+        });
+
+        socket.on("room:state_snapshot", (roomState: RoomState) => {
+          set({ room: roomState });
+        });
+
+        socket.on("room:player_joined", ({ player }: { player: PlayerState }) => {
+          get().addToast(`${player.displayName} joined the room`, "success");
+        });
+
+        socket.on("room:player_ready", ({ playerId, ready }: { playerId: string; ready: boolean }) => {
+          set((state) => {
+            if (!state.room) return {};
+            const updatedPlayers = state.room.players.map((p) =>
+              p && p.id === playerId ? { ...p, ready } : p
+            ) as [PlayerState, PlayerState?];
+            return {
+              room: { ...state.room, players: updatedPlayers },
+            };
+          });
+        });
+
+        socket.on("game:started", () => {
+          get().addToast("Game started!", "success");
+        });
+
+        socket.on("turn:category_selected", ({ category }: { category: CategoryId }) => {
+          set((state) => {
+            if (!state.room) return {};
+            return {
+              room: {
+                ...state.room,
+                turn: {
+                  ...state.room.turn,
+                  phase: "question_loading",
+                  chosenCategory: category,
+                },
+              },
+            };
+          });
+        });
+
+        socket.on("turn:question_ready", (questionPayload: QuestionPayload) => {
+          set((state) => ({
+            currentQuestion: questionPayload,
+            draftText: "",
+            isDraftLocked: false,
+            sharedAnswer: null,
+            room: state.room
+              ? {
+                  ...state.room,
+                  turn: {
+                    ...state.room.turn,
+                    phase: "answering",
+                    chosenCategory: questionPayload.category,
+                  },
+                }
+              : null,
+          }));
+        });
+
+        socket.on("turn:phase_update", ({ phase, chosenCategory }: { phase: TurnPhase; chosenCategory?: CategoryId }) => {
+          set((state) => {
+            if (!state.room) return {};
+            return {
+              room: {
+                ...state.room,
+                turn: {
+                  ...state.room.turn,
+                  phase,
+                  ...(chosenCategory ? { chosenCategory } : {}),
+                },
+              },
+            };
+          });
+        });
+
+        socket.on("turn:answer_locked", () => {
+          set({ isDraftLocked: true });
+        });
+
+        socket.on("turn:answer_shared", (payload: AnswerSharedPayload) => {
+          set((state) => ({
+            sharedAnswer: payload,
+            room: state.room
+              ? {
+                  ...state.room,
+                  turn: {
+                    ...state.room.turn,
+                    phase: "shared",
+                  },
+                }
+              : null,
+          }));
+        });
+
+        socket.on("turn:completed", ({ round, nextActivePlayerId }: { round: number; nextActivePlayerId: string }) => {
+          set((state) => {
+            if (!state.room) {
+              return {
+                currentQuestion: null,
+                sharedAnswer: null,
+                draftText: "",
+                isDraftLocked: false,
+              };
+            }
+            const p1 = state.room.players[0];
+            const p2 = state.room.players[1];
+            const nextPicker = nextActivePlayerId;
+            const nextAnswerer = nextPicker === p1?.id ? (p2?.id ?? "") : (p1?.id ?? "");
+
+            return {
+              currentQuestion: null,
+              sharedAnswer: null,
+              draftText: "",
+              isDraftLocked: false,
+              room: {
+                ...state.room,
+                turn: {
+                  activePlayerId: nextPicker,
+                  pickerPlayerId: nextPicker,
+                  answererPlayerId: nextAnswerer,
+                  round,
+                  phase: "choosing_category",
+                  skipsThisTurn: 0,
+                },
+              },
+            };
+          });
+        });
+
+        socket.on("game:completed", (data: GameCompletedPayload) => {
+          set({ gameCompletedData: data });
+        });
+
+        socket.on("reaction:received", ({ from, reaction }: { from: string; reaction: ReactionId }) => {
+          get().addReaction(from, reaction);
+        });
+
+        socket.on("player:disconnected", ({ playerId }: { playerId: string }) => {
+          set((state) => {
+            if (!state.room) return {};
+            const updated = state.room.players.map((p) =>
+              p && p.id === playerId ? { ...p, connection: "reconnecting" as const } : p
+            ) as [PlayerState, PlayerState?];
+            return { room: { ...state.room, players: updated } };
+          });
+        });
+
+        socket.on("player:reconnected", ({ playerId }: { playerId: string }) => {
+          set((state) => {
+            if (!state.room) return {};
+            const updated = state.room.players.map((p) =>
+              p && p.id === playerId ? { ...p, connection: "connected" as const } : p
+            ) as [PlayerState, PlayerState?];
+            return { room: { ...state.room, players: updated } };
+          });
+        });
+
+        socket.on("error:invalid_room", ({ reason }: { reason: string }) => {
+          get().addToast(reason || "Invalid room", "neutral");
+        });
+
+        socket.on("error:room_full", ({ reason }: { reason: string }) => {
+          get().addToast(reason || "Room is full", "neutral");
+        });
+
+        socket.on("error:generic", ({ reason }: { reason: string }) => {
+          get().addToast(reason || "An error occurred", "neutral");
+        });
+      },
+
+      createRoom: (displayName, avatar, settings, relationshipType) => {
+        const socket = getSocket();
+        get().initSocketListeners();
+        socket.emit("room:create", {
+          displayName,
+          avatar,
+          settings,
+          relationshipType,
+        });
+      },
+
+      joinRoom: (displayName, avatar, roomCode, inviteToken, relationshipType) => {
+        const socket = getSocket();
+        get().initSocketListeners();
+        socket.emit("room:join", {
+          displayName,
+          avatar,
+          roomCode,
+          inviteToken,
+          relationshipType,
+        });
+      },
+
+      toggleReady: () => {
+        getSocket().emit("room:ready");
+      },
+
+      startGame: () => {
+        getSocket().emit("game:start");
+      },
+
+      selectCategory: (category) => {
+        getSocket().emit("turn:select_category", { category });
+      },
+
+      sendDraftUpdate: (text) => {
+        set({ draftText: text });
+        getSocket().emit("turn:answer_draft", { text });
+      },
+
+      lockAnswer: () => {
+        set({ isDraftLocked: true });
+        getSocket().emit("turn:answer_lock");
+      },
+
+      shareAnswer: () => {
+        getSocket().emit("turn:answer_share");
+      },
+
+      skipQuestion: () => {
+        getSocket().emit("turn:skip");
+      },
+
+      sendReaction: (reaction) => {
+        getSocket().emit("reaction:send", { reaction });
+      },
+
+      resetGame: () => {
+        set({
+          room: null,
+          currentQuestion: null,
+          sharedAnswer: null,
+          draftText: "",
+          isDraftLocked: false,
+          gameCompletedData: null,
+          activeReactions: [],
+        });
+      },
+    }),
+    {
+      name: "twilight-game-store",
+      partialize: (state) => ({
+        localPlayer: state.localPlayer,
+      }),
+    }
+  )
+);

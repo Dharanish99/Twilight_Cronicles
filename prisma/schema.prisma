@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id                     String   @id @default(cuid())
+  text                   String
+  category               String
+  subcategory            String?
+  intensity              Int      // 1-5
+  relationshipFit        String[] // ["friends","more_than_friends","just_meeting",...]
+  minRound               Int?
+  maxRound               Int?
+  skipSensitivity        String   @default("standard") // low | standard | handle_with_care
+  contentWarningLevel    String   @default("none")     // none | mild | notable
+  estimatedAnswerSeconds Int      @default(45)
+  followUpPrompt         String?
+  tags                   String[]
+  status                 String   @default("published") // draft | published | flagged | retired
+  timesShown             Int      @default(0)
+  timesCompleted         Int      @default(0)
+  timesSkipped           Int      @default(0)
+  reportCount            Int      @default(0)
+  createdAt              DateTime @default(now())
+
+  reports Report[]
+  highlights Highlight[]
+}
+
+model SessionMetadata {
+  id              String    @id @default(cuid())
+  roomId          String
+  roundsCompleted Int
+  categoriesUsed  String[]
+  startedAt       DateTime
+  endedAt         DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([roomId])
+}
+
+model Highlight {
+  id                 String   @id @default(cuid())
+  ownerSessionToken  String   // or ownerAccountId if account exists
+  questionId         String
+  answerTextEncrypted Bytes
+  savedAt            DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@index([ownerSessionToken])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  questionId String
+  reason     String   // offensive | too_personal | repetitive | poorly_written | wrong_category | other
+  createdAt  DateTime @default(now())
+  status     String   @default("open") // open | reviewed | actioned
+
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@index([status])
+  @@index([questionId])
+}
+
+model Account {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  sessionToken  String   // maps to guest session tokens
+  createdAt     DateTime @default(now())
+  deletedAt     DateTime? // soft-delete, then scheduled hard-delete
+}

@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/* =========================================================
+   TWILIGHT CHRONICLES — Design Token System
+   § 4.1 Daylight Theme (default)
+   § 4.2 Dusk Theme ([data-theme="dusk"])
+   § 4.3 Spacing, Radius, Shadow, Border
+   § 5   Typography
+   ========================================================= */
+
+/* ----- Daylight Theme (default) ----- */
+:root {
+  /* Base surfaces */
+  --bg-base: #FBF7F1;
+  --bg-elevated: #FFFFFF;
+  --bg-sunken: #F0EAE0;
+
+  /* Ink - High Contrast & Crisp */
+  --ink-primary: #1C1917;
+  --ink-secondary: #44403C;
+  --ink-tertiary: #78716C;
+  --border-subtle: #D6CEBE;
+
+  /* Brand */
+  --accent-ember: #E1592A;
+  --accent-ember-hover: #C74A20;
+  --accent-ember-tint: #FDE8DE;
+
+  /* Category accents */
+  --cat-deep: #2D3E61;
+  --cat-playful: #C88D1A;
+  --cat-emotional: #A84052;
+  --cat-curious: #28776D;
+  --cat-memories: #876437;
+  --cat-future: #5A4488;
+  --cat-chaotic: #A3337B;
+  --cat-would-you-rather: #3C663A;
+  --cat-friendship: #B0621A;
+  --cat-getting-to-know-you: #356B91;
+
+  /* Status */
+  --success: #2E7D44;
+  --danger: #C5221F;
+  --danger-tint: #FCE8E6;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.08);
+  --shadow-md: 0 4px 16px rgba(28, 25, 23, 0.10);
+  --shadow-lg: 0 12px 32px rgba(28, 25, 23, 0.14);
+
+  /* Borders */
+  --border-hairline: 1px solid var(--border-subtle);
+
+  /* Typography */
+  --font-display: var(--font-fraunces, "Fraunces", Georgia, serif);
+  --font-ui: var(--font-inter, "Inter", -apple-system, "Segoe UI", sans-serif);
+
+  --text-question-mobile: 32px;
+  --text-question-desktop: 48px;
+  --text-hero-mobile: 34px;
+  --text-hero-desktop: 56px;
+  --text-category-label: 12px;
+  --text-body: 17px;
+  --text-caption: 14px;
+
+  /* Animation durations */
+  --dur-fast: 100ms;
+  --dur-base: 200ms;
+  --dur-medium: 250ms;
+  --dur-slow: 300ms;
+  --dur-enter: 400ms;
+
+  /* Easing */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ----- Dusk Theme ----- */
+[data-theme="dusk"] {
+  --bg-base: #1C1628;
+  --bg-elevated: #28203B;
+  --bg-sunken: #140E20;
+  --ink-primary: #F7F4EF;
+  --ink-secondary: #D4CCE4;
+  --ink-tertiary: #A69DB5;
+  --border-subtle: #43395F;
+
+  --accent-ember: #F0834A;
+  --accent-ember-hover: #F79A6B;
+  --accent-ember-tint: #4A2E22;
+
+  --cat-deep: #8E9FCF;
+  --cat-playful: #F2CA6E;
+  --cat-emotional: #E899AC;
+  --cat-curious: #77D1C5;
+  --cat-memories: #D4AF79;
+  --cat-future: #B4A2EA;
+  --cat-chaotic: #EA96CB;
+  --cat-would-you-rather: #95D191;
+  --cat-friendship: #F0B073;
+  --cat-getting-to-know-you: #90C1E8;
+
+  --success: #88CF95;
+  --danger: #E88B8B;
+  --danger-tint: #4A2626;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* ----- Base styles ----- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--ink-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  margin: 0;
+  min-height: 100dvh;
+  transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+
+/* ----- Typography utilities ----- */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+.question-display {
+  font-family: var(--font-display);
+  font-size: var(--text-question-mobile);
+  line-height: 1.25;
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .question-display {
+    font-size: var(--text-question-desktop);
+    line-height: 1.2;
+  }
+}
+
+.hero-display {
+  font-family: var(--font-display);
+  font-size: var(--text-hero-mobile);
+  line-height: 1.2;
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .hero-display {
+    font-size: var(--text-hero-desktop);
+    line-height: 1.15;
+  }
+}
+
+.category-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-category-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ----- Explicit Utility Classes for Reliable Colors ----- */
+.text-ink-primary {
+  color: var(--ink-primary) !important;
+}
+
+.text-ink-secondary {
+  color: var(--ink-secondary) !important;
+}
+
+.text-ink-tertiary {
+  color: var(--ink-tertiary) !important;
+}
+
+.bg-surface-base {
+  background-color: var(--bg-base) !important;
+}
+
+.bg-surface-elevated {
+  background-color: var(--bg-elevated) !important;
+}
+
+.bg-surface-sunken {
+  background-color: var(--bg-sunken) !important;
+}
+
+.border-theme-subtle {
+  border-color: var(--border-subtle) !important;
+}
+
+/* ----- Focus styles ----- */
+:focus-visible {
+  outline: 2px solid var(--accent-ember);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ----- Reduced motion ----- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ----- Scrollbar styling ----- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-sunken);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-tertiary);
+}
+
+/* ----- Selection color ----- */
+::selection {
+  background: var(--accent-ember-tint);
+  color: var(--ink-primary);
+}

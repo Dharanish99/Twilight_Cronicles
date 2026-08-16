@@ -1,0 +1,45 @@
+# Twilight Chronicles — Implementation Tasks
+
+- [x] Phase 0: Scaffolding & Infrastructure <!-- id: 0 -->
+  - [x] Root monorepo structure (pnpm workspace, turbo.json, package.json) <!-- id: 1 -->
+  - [x] Docker Compose setup for PostgreSQL & Redis <!-- id: 2 -->
+  - [x] Prisma schema with Question, Highlight, Report models <!-- id: 3 -->
+  - [x] Content package with 121 seed questions across 10 categories <!-- id: 4 -->
+  - [x] Shared TypeScript contracts and socket event definitions <!-- id: 5 -->
+- [x] Phase 1: Design Tokens & Core Components <!-- id: 6 -->
+  - [x] Daylight & Dusk design token CSS system <!-- id: 7 -->
+  - [x] Fraunces + Inter typography configuration <!-- id: 8 -->
+  - [x] Framer Motion animation variant library with reduced-motion support <!-- id: 9 -->
+  - [x] UI component library (Button, Toast, Dialog, BottomSheet, PlayerAvatar, ConnectionIndicator, RoomCodeDisplay, TurnIndicator, SkipControl) <!-- id: 10 -->
+  - [x] Game component library (CategoryCard, CategoryGrid, QuestionCard, WaitingScreen, RevealCard, TurnTransition) <!-- id: 11 -->
+- [x] Phase 2: Marketing & Informational Pages <!-- id: 12 -->
+  - [x] Landing page with hero, how-it-works summary, mood showcase, and CTAs <!-- id: 13 -->
+  - [x] How it works page <!-- id: 14 -->
+  - [x] About page <!-- id: 15 -->
+  - [x] FAQ page <!-- id: 16 -->
+  - [x] Privacy Policy & Terms of Service <!-- id: 17 -->
+  - [x] Contact page <!-- id: 18 -->
+  - [x] For Best Friends, Couples, and Long Distance pages <!-- id: 19 -->
+  - [x] Category showcase SEO pages for all 10 moods <!-- id: 20 -->
+  - [x] 404 Not Found page <!-- id: 21 -->
+- [x] Phase 3: Room Creation & Lobby <!-- id: 22 -->
+  - [x] Host wizard with 3-way relationship selector & session settings <!-- id: 23 -->
+  - [x] Join page with room code & invite token support <!-- id: 24 -->
+  - [x] Real-time 2-player lobby with ready synchronization <!-- id: 25 -->
+- [x] Phase 4: Real-time Game Loop & Question Engine <!-- id: 26 -->
+  - [x] Question selection engine with intensity curve & de-duplication <!-- id: 27 -->
+  - [x] Server-authoritative turn state machine <!-- id: 28 -->
+  - [x] Private typing & answer lock flow <!-- id: 29 -->
+  - [x] Reveal card with interactive reaction broadcasting <!-- id: 30 -->
+- [x] Phase 5: Post-Game & Auxiliary Pages <!-- id: 31 -->
+  - [x] Game completion summary & highlight bookmarking <!-- id: 32 -->
+  - [x] In-game room settings & theme switcher <!-- id: 33 -->
+  - [x] Saved highlights reader <!-- id: 34 -->
+  - [x] Player profile <!-- id: 35 -->
+  - [x] Global settings & cache controls <!-- id: 36 -->
+  - [x] Question safety report flow <!-- id: 37 -->
+  - [x] Dev component showcase gallery <!-- id: 38 -->
+- [x] Phase 6: End-to-End Validation <!-- id: 39 -->
+  - [x] Next.js 29-route static generation & build verification <!-- id: 40 -->
+  - [x] Realtime service TypeScript compilation & health checks <!-- id: 41 -->
+  - [x] Browser E2E navigation verification <!-- id: 42 -->
