@@ -29,7 +29,8 @@ export type AvatarId =
 export type ReactionId = "heart" | "spark" | "soft" | "same" | "surprising";
 
 export type TurnPhase =
-  | "coin_toss"
+  | "coin_toss_waiting"
+  | "coin_toss_flipping"
   | "choosing_category"
   | "question_loading"
   | "answering"

@@ -14,7 +14,7 @@ export function TurnIndicator({
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="category-label text-[var(--accent-ember)] font-semibold">
-        Round {round} of {totalRounds}
+        Question {round} of {totalRounds}
       </span>
       <span className="text-ink-secondary font-medium">
         {roleDescription}

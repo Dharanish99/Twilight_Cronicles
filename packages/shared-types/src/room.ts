@@ -14,6 +14,7 @@ export interface TurnState {
   activePlayerId: string;
   pickerPlayerId: string;
   answererPlayerId: string;
+  tosserPlayerId?: string;
   tossWinnerId?: string;
   round: number;
   phase: TurnPhase;

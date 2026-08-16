@@ -93,6 +93,7 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
 
       socket.join(roomId);
 
+      socket.emit("room:identity", { playerId: hostPlayerId });
       socket.emit("room:state_snapshot", roomState);
       console.log(`[room:create] Room ${roomId} created by ${displayName} (ID: ${hostPlayerId})`);
     } catch (err: any) {
@@ -166,6 +167,8 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
 
       socket.join(targetRoomId);
 
+      socket.emit("room:identity", { playerId: guestPlayerId });
+
       const joinedPlayer = roomState.players.find((p) => p && p.id === guestPlayerId)!;
       io.to(targetRoomId).emit("room:player_joined", { player: joinedPlayer });
       io.to(targetRoomId).emit("room:state_snapshot", roomState);
@@ -216,38 +219,23 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
         return;
       }
 
-      // Coin Toss: 50% chance for either player to win first pick
-      const tossWinner = Math.random() < 0.5 ? p1 : p2;
-      const tossLoser = tossWinner.id === p1.id ? p2 : p1;
-
+      // Coin Toss phase 1: Wait for tosser to click flip
       roomState.status = "active";
       roomState.turn = {
-        activePlayerId: tossWinner.id,
-        pickerPlayerId: tossWinner.id,
-        answererPlayerId: tossLoser.id,
-        tossWinnerId: tossWinner.id,
+        activePlayerId: p1.id,
+        pickerPlayerId: "",
+        answererPlayerId: "",
+        tosserPlayerId: p1.id,
         round: 1,
-        phase: "coin_toss",
+        phase: "coin_toss_waiting",
         skipsThisTurn: 0,
       };
 
       await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
 
-      io.to(roomId).emit("game:started", { firstActivePlayerId: tossWinner.id });
+      io.to(roomId).emit("game:started", { firstActivePlayerId: p1.id });
       io.to(roomId).emit("room:state_snapshot", roomState);
-      console.log(`[game:start] Coin Toss in room ${roomId}. Toss winner: ${tossWinner.displayName}`);
-
-      // Automatically transition from coin toss to category selection after 4.2 seconds
-      setTimeout(async () => {
-        const latestRoom = await getJson<RoomState>(keys.room(roomId));
-        if (latestRoom && latestRoom.turn.phase === "coin_toss") {
-          latestRoom.turn.phase = "choosing_category";
-          await setJson(keys.room(roomId), latestRoom, ROOM_TTL_SECONDS);
-          io.to(roomId).emit("turn:phase_update", { phase: "choosing_category" });
-          io.to(roomId).emit("room:state_snapshot", latestRoom);
-          console.log(`[coin_toss] Finished. ${tossWinner.displayName} is now picking category.`);
-        }
-      }, 4200);
+      console.log(`[game:start] Room ${roomId} game started. Toss waiting on ${p1.displayName}`);
     } catch (err: any) {
       console.error("[game:start] Error:", err);
     }

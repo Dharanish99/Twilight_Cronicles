@@ -139,21 +139,13 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
       const draft = await getJson<{ text: string; playerId: string }>(keys.turnDraft(roomId));
 
       if (roomState.turn.phase === "shared") {
-        // Continue clicked -> swap roles for the next turn!
+        // Continue clicked -> next question via coin toss!
         const p1 = roomState.players[0];
         const p2 = roomState.players[1];
         if (!p2) return;
 
-        const previousPicker = roomState.turn.pickerPlayerId;
-        const previousAnswerer = roomState.turn.answererPlayerId;
-
-        // Next picker is the person who just answered!
-        const nextPicker = previousAnswerer;
-        const nextAnswerer = previousPicker;
-
-        // Round advances after every 2 turns (when turn passes back to player 1)
-        const isNextRound = nextPicker === p1.id;
-        const nextRound = isNextRound ? roomState.turn.round + 1 : roomState.turn.round;
+        // Each question = 1 round. Increment after every question.
+        const nextRound = roomState.turn.round + 1;
 
         if (nextRound > roomState.settings.rounds) {
           roomState.status = "completed";
@@ -166,12 +158,17 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
           return;
         }
 
+        // Alternate who gets to toss the coin each round
+        const previousTosser = roomState.turn.tosserPlayerId;
+        const nextTosser = previousTosser === p1.id ? p2.id : p1.id;
+
         roomState.turn = {
-          activePlayerId: nextPicker,
-          pickerPlayerId: nextPicker,
-          answererPlayerId: nextAnswerer,
+          activePlayerId: nextTosser,
+          pickerPlayerId: "",
+          answererPlayerId: "",
+          tosserPlayerId: nextTosser,
           round: nextRound,
-          phase: "choosing_category",
+          phase: "coin_toss_waiting",
           skipsThisTurn: 0,
         };
 
@@ -179,10 +176,10 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
 
         io.to(roomId).emit("turn:completed", {
           round: nextRound,
-          nextActivePlayerId: nextPicker,
+          nextActivePlayerId: nextTosser,
         });
         io.to(roomId).emit("room:state_snapshot", roomState);
-        console.log(`[turn:completed] Round ${nextRound}. Next picker is ${nextPicker}`);
+        console.log(`[turn:completed] Question ${nextRound}/${roomState.settings.rounds}. Next tosser: ${nextTosser}`);
         return;
       }
 
@@ -257,5 +254,55 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
     const { roomId, playerId } = socket.data;
     if (!roomId) return;
     io.to(roomId).emit("reaction:received", { from: playerId, reaction: reaction as ReactionId });
+  });
+
+  // turn:flip_coin (Sent by tosser)
+  socket.on("turn:flip_coin", async () => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+
+    try {
+      const roomState = await getJson<RoomState>(keys.room(roomId));
+      if (!roomState) return;
+
+      const { turn, players } = roomState;
+      // Must be the assigned tosser and in the right phase
+      if (turn.phase !== "coin_toss_waiting" || turn.tosserPlayerId !== playerId) return;
+
+      const p1 = players[0];
+      const p2 = players[1];
+      if (!p1 || !p2) return;
+
+      // Determine winner randomly
+      const tossWinner = Math.random() < 0.5 ? p1 : p2;
+      const tossLoser = tossWinner.id === p1.id ? p2 : p1;
+
+      turn.phase = "coin_toss_flipping";
+      turn.tossWinnerId = tossWinner.id;
+      turn.pickerPlayerId = tossWinner.id;
+      turn.answererPlayerId = tossLoser.id;
+      turn.activePlayerId = tossWinner.id;
+
+      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
+
+      // Broadcast phase update and full snapshot
+      io.to(roomId).emit("turn:phase_update", { phase: "coin_toss_flipping" });
+      io.to(roomId).emit("room:state_snapshot", roomState);
+
+      // Auto-advance to choosing category after animation (4.5s)
+      setTimeout(async () => {
+        const latestRoom = await getJson<RoomState>(keys.room(roomId));
+        if (latestRoom && latestRoom.turn.phase === "coin_toss_flipping") {
+          latestRoom.turn.phase = "choosing_category";
+          await setJson(keys.room(roomId), latestRoom, ROOM_TTL_SECONDS);
+          io.to(roomId).emit("turn:phase_update", { phase: "choosing_category" });
+          io.to(roomId).emit("room:state_snapshot", latestRoom);
+          console.log(`[turn:flip_coin] Finished. ${tossWinner.displayName} is now picking category.`);
+        }
+      }, 4500);
+
+    } catch (err: any) {
+      console.error("[turn:flip_coin] Error:", err);
+    }
   });
 }

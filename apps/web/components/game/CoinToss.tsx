@@ -10,7 +10,9 @@ interface CoinTossProps {
   player1: PlayerState;
   player2: PlayerState;
   winnerId: string;
-  onFinished?: () => void;
+  isTosser: boolean;
+  phase: "coin_toss_waiting" | "coin_toss_flipping";
+  onFlip?: () => void;
 }
 
 // Particle burst component
@@ -64,37 +66,35 @@ export function CoinToss({
   player1,
   player2,
   winnerId,
-  onFinished,
+  isTosser,
+  phase,
+  onFlip,
 }: CoinTossProps) {
   const [stage, setStage] = useState<"intro" | "spinning" | "landing" | "result">("intro");
 
-  const isWinnerP1 = winnerId === player1.id;
+  // In waiting phase, winnerId is not yet known.
+  // We use fallback to player1 just for the face rendering, 
+  // but it won't spin until phase becomes coin_toss_flipping.
+  const resolvedWinnerId = winnerId || player1.id;
+  const isWinnerP1 = resolvedWinnerId === player1.id;
+  
   const winner = isWinnerP1 ? player1 : player2;
   const loser = isWinnerP1 ? player2 : player1;
 
-  // The coin has two faces:
-  // Front (0deg / 360deg multiples) = Player 1
-  // Back (180deg) = Player 2
-  // To land on winner: if P1 wins → end on 0 mod 360 → 1800 (5 full spins)
-  //                     if P2 wins → end on 180 mod 360 → 1980 (5.5 full spins)
   const finalRotation = isWinnerP1 ? 1800 : 1980;
 
   useEffect(() => {
-    // Stage timeline
-    const t1 = setTimeout(() => setStage("spinning"), 600);
-    const t2 = setTimeout(() => setStage("landing"), 2600);
-    const t3 = setTimeout(() => setStage("result"), 3200);
-    const t4 = setTimeout(() => {
-      if (onFinished) onFinished();
-    }, 4500);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-    };
-  }, [onFinished]);
+    // When phase changes to flipping, trigger the animation sequence
+    if (phase === "coin_toss_flipping") {
+      setStage("spinning");
+      const t1 = setTimeout(() => setStage("landing"), 2000);
+      const t2 = setTimeout(() => setStage("result"), 2600);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [phase]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 text-center px-4">
@@ -114,6 +114,20 @@ export function CoinToss({
             <h2 className="font-display text-3xl sm:text-4xl text-ink-primary font-serif">
               Who picks first?
             </h2>
+            <div className="mt-4 h-12 flex items-center justify-center w-full">
+              {isTosser ? (
+                <button
+                  onClick={onFlip}
+                  className="px-6 py-2.5 bg-[var(--accent-ember)] hover:bg-[var(--accent-ember-dark)] text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                >
+                  <Sparkles size={16} /> Flip Coin
+                </button>
+              ) : (
+                <p className="text-sm font-medium text-ink-tertiary animate-pulse">
+                  Waiting for partner to flip the coin...
+                </p>
+              )}
+            </div>
           </motion.div>
         )}
         {(stage === "spinning" || stage === "landing") && (
@@ -220,7 +234,9 @@ export function CoinToss({
           <div
             className="absolute inset-[3px] rounded-full"
             style={{
-              transform: "translateZ(-3px)",
+              transform: "translateZ(-4px)",
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
               background: "linear-gradient(135deg, #b8860b, #daa520, #b8860b)",
               boxShadow: "inset 0 0 15px rgba(0,0,0,0.3)",
             }}
@@ -232,6 +248,7 @@ export function CoinToss({
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
+              transform: "translateZ(1px)",
               background: "linear-gradient(145deg, #faf5f0, #f5ebe0)",
               border: "4px solid var(--accent-ember)",
               boxShadow:
@@ -254,7 +271,7 @@ export function CoinToss({
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
+              transform: "rotateY(180deg) translateZ(1px)",
               background: "linear-gradient(145deg, #f0f5f5, #e0ebe5)",
               border: "4px solid var(--cat-playful)",
               boxShadow:

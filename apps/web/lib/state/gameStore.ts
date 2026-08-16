@@ -39,6 +39,9 @@ interface GameStore {
   localPlayer: LocalPlayer | null;
   setLocalPlayer: (player: LocalPlayer) => void;
 
+  myServerId: string | null;
+  setMyServerId: (id: string | null) => void;
+
   connectionStatus: "connected" | "reconnecting" | "disconnected";
   setConnectionStatus: (status: "connected" | "reconnecting" | "disconnected") => void;
 
@@ -82,6 +85,7 @@ interface GameStore {
   ) => void;
   toggleReady: () => void;
   startGame: () => void;
+  flipCoin: () => void;
   selectCategory: (category: CategoryId) => void;
   sendDraftUpdate: (text: string) => void;
   lockAnswer: () => void;
@@ -96,6 +100,9 @@ export const useGameStore = create<GameStore>()(
     (set, get) => ({
       localPlayer: null,
       setLocalPlayer: (player) => set({ localPlayer: player }),
+
+      myServerId: null,
+      setMyServerId: (id) => set({ myServerId: id }),
 
       connectionStatus: "disconnected",
       setConnectionStatus: (status) => set({ connectionStatus: status }),
@@ -168,26 +175,13 @@ export const useGameStore = create<GameStore>()(
           set({ connectionStatus: "reconnecting" });
         });
 
+        socket.on("room:identity", ({ playerId }: { playerId: string }) => {
+          console.log(`[Store] Received official identity from server: ${playerId}`);
+          set({ myServerId: playerId });
+        });
+
         socket.on("room:state_snapshot", (roomState: RoomState) => {
-          set((state) => {
-            // Reconcile localPlayer.id with the server-assigned playerId
-            const currentLocal = state.localPlayer;
-            if (currentLocal && roomState.players) {
-              const matched = roomState.players.find(
-                (p) => p && p.displayName === currentLocal.displayName
-              );
-              if (matched && matched.id !== currentLocal.id) {
-                console.log(
-                  `[Store] Reconciled localPlayer id: ${currentLocal.id} → ${matched.id}`
-                );
-                return {
-                  room: roomState,
-                  localPlayer: { ...currentLocal, id: matched.id },
-                };
-              }
-            }
-            return { room: roomState };
-          });
+          set({ room: roomState });
         });
 
         socket.on("room:player_joined", ({ player }: { player: PlayerState }) => {
@@ -207,7 +201,7 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("game:started", () => {
-          get().addToast("🪙 Coin toss in progress...", "neutral");
+          get().addToast("🪙 Game on! Time for the first coin toss!", "success");
         });
 
         socket.on("turn:category_selected", ({ category }: { category: CategoryId }) => {
@@ -290,10 +284,6 @@ export const useGameStore = create<GameStore>()(
                 isDraftLocked: false,
               };
             }
-            const p1 = state.room.players[0];
-            const p2 = state.room.players[1];
-            const nextPicker = nextActivePlayerId;
-            const nextAnswerer = nextPicker === p1?.id ? (p2?.id ?? "") : (p1?.id ?? "");
 
             return {
               currentQuestion: null,
@@ -303,11 +293,12 @@ export const useGameStore = create<GameStore>()(
               room: {
                 ...state.room,
                 turn: {
-                  activePlayerId: nextPicker,
-                  pickerPlayerId: nextPicker,
-                  answererPlayerId: nextAnswerer,
+                  activePlayerId: nextActivePlayerId,
+                  pickerPlayerId: "",
+                  answererPlayerId: "",
+                  tosserPlayerId: nextActivePlayerId,
                   round,
-                  phase: "choosing_category" as TurnPhase,
+                  phase: "coin_toss_waiting" as TurnPhase,
                   skipsThisTurn: 0,
                 },
               },
@@ -387,6 +378,10 @@ export const useGameStore = create<GameStore>()(
 
       startGame: () => {
         getSocket().emit("game:start");
+      },
+
+      flipCoin: () => {
+        getSocket().emit("turn:flip_coin");
       },
 
       selectCategory: (category) => {

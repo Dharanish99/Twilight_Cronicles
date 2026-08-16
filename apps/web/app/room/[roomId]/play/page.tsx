@@ -42,6 +42,8 @@ export default function PlayPage({ params }: PlayPageProps) {
     initSocketListeners,
     toasts,
     removeToast,
+    myServerId,
+    flipCoin,
   } = useGameStore();
 
   const [activeReactionPopups, setActiveReactionPopups] = useState<
@@ -76,28 +78,14 @@ export default function PlayPage({ params }: PlayPageProps) {
     }
   }, [room?.status, roomId, router]);
 
-  // ─────────── PLAYER IDENTITY (the core fix) ───────────
+  // ─────────── PLAYER IDENTITY (Robust via Server Handshake) ───────────
   const player1 = room?.players?.[0];
   const player2 = room?.players?.[1];
 
-  // Determine which server player "I" am.
-  // The server assigned me a UUID when I created/joined.
-  // My localPlayer.id was reconciled to that UUID in the state_snapshot handler.
-  // Match by reconciled ID first, then by displayName as fallback.
-  const myPlayerId = localPlayer?.id;
+  // We exclusively trust myServerId from the room:identity event
+  const isMePlayer1 = !!(myServerId && player1 && myServerId === player1.id);
+  const isMePlayer2 = !!(myServerId && player2 && myServerId === player2.id);
 
-  const isMePlayer1 = !!(
-    myPlayerId &&
-    player1 &&
-    (myPlayerId === player1.id || localPlayer?.displayName === player1.displayName)
-  );
-  const isMePlayer2 = !!(
-    myPlayerId &&
-    player2 &&
-    (myPlayerId === player2.id || localPlayer?.displayName === player2.displayName)
-  );
-
-  // If neither matched by ID, fall back to displayName
   const resolvedIsMeP1 = isMePlayer1 && !isMePlayer2 ? true : !isMePlayer2 && !isMePlayer1 ? true : isMePlayer1;
 
   const myPlayer = resolvedIsMeP1 ? player1 : player2;
@@ -111,12 +99,14 @@ export default function PlayPage({ params }: PlayPageProps) {
   const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
 
   // Role determination: compare my actual server-side player ID with the turn's picker/answerer IDs
-  const myServerId = myPlayer?.id;
   const isPicker = !!(myServerId && turn?.pickerPlayerId === myServerId);
   const isAnswerer = !!(myServerId && turn?.answererPlayerId === myServerId);
+  const isTosser = !!(myServerId && turn?.tosserPlayerId === myServerId);
 
   const getRoleDescription = () => {
-    if (phase === "coin_toss") return "🪙 Coin toss ceremony";
+    if (phase === "coin_toss_waiting" || phase === "coin_toss_flipping") {
+      return "🪙 Coin toss ceremony";
+    }
     if (phase === "choosing_category" || phase === "question_loading") {
       return isPicker
         ? `You are choosing a mood for ${partnerName}`
@@ -230,11 +220,14 @@ export default function PlayPage({ params }: PlayPageProps) {
       {/* Main Interactive Stage */}
       <main className="max-w-2xl mx-auto w-full my-auto py-8">
         {/* PHASE 0: 3D COIN TOSS CEREMONY */}
-        {phase === "coin_toss" && player1 && player2 && (
+        {(phase === "coin_toss_waiting" || phase === "coin_toss_flipping") && player1 && player2 && (
           <CoinToss
             player1={player1}
             player2={player2}
-            winnerId={turn?.tossWinnerId || turn?.pickerPlayerId || player1.id}
+            winnerId={turn?.tossWinnerId || ""}
+            isTosser={isTosser}
+            phase={phase}
+            onFlip={flipCoin}
           />
         )}
 

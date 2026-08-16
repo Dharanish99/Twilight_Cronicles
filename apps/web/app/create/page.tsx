@@ -211,13 +211,13 @@ export default function CreateRoomPage() {
               </p>
             </div>
 
-            {/* Rounds */}
+            {/* Total Questions */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-[var(--ink-primary)]">
-                Number of Rounds ({rounds * 2} turns total)
+                Total Questions (shared between both players)
               </label>
               <div className="grid grid-cols-4 gap-2">
-                {[4, 6, 8, 10].map((r) => (
+                {[6, 10, 15, 20].map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -228,7 +228,7 @@ export default function CreateRoomPage() {
                         : "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--ink-primary)] hover:border-[var(--ink-tertiary)]"
                     }`}
                   >
-                    {r} Rounds
+                    {r} Qs
                   </button>
                 ))}
               </div>

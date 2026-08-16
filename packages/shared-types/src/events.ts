@@ -24,6 +24,7 @@ export interface ServerToClientEvents {
   "room:state_snapshot": (state: RoomState) => void;
   "room:player_joined": (payload: { player: PlayerState }) => void;
   "room:player_ready": (payload: { playerId: string; ready: boolean }) => void;
+  "room:identity": (payload: { playerId: string }) => void;
 
   "game:started": (payload: { firstActivePlayerId: string }) => void;
   "game:completed": (payload: GameCompletedPayload) => void;
@@ -77,6 +78,7 @@ export interface ClientToServerEvents {
   "turn:answer_lock": () => void;
   "turn:answer_share": () => void;
   "turn:skip": () => void;
+  "turn:flip_coin": () => void;
 
   "reaction:send": (payload: { reaction: ReactionId }) => void;
 
