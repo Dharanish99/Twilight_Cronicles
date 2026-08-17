@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/theme/categories";
 import type { CategoryId } from "@twilight/shared-types";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 
 interface PageProps {
   params: Promise<{ category: string }>;
@@ -30,7 +31,7 @@ export default async function CategoryPage({ params }: PageProps) {
   return (
     <div className="max-w-2xl mx-auto px-5 py-16 sm:py-24">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-3xl" aria-hidden="true">{def.emoji}</span>
+        <CategoryIcon category={category as CategoryId} size={28} aria-hidden />
         <span className="category-label" style={{ color: `var(${def.accent})` }}>
           {def.label}
         </span>

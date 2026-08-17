@@ -1,4 +1,4 @@
-﻿import type { CategoryId } from "@twilight/shared-types";
+import type { CategoryId } from "@twilight/shared-types";
 
 export interface CategoryDef {
   label: string;
@@ -6,7 +6,6 @@ export interface CategoryDef {
   accent: string;           // CSS custom property name
   intensityRange: [number, number];
   defaultEnabled: boolean | string;
-  emoji: string;
 }
 
 export const CATEGORIES: Record<CategoryId, CategoryDef> = {
@@ -16,7 +15,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-deep",
     intensityRange: [2, 5],
     defaultEnabled: true,
-    emoji: "🌊",
   },
   playful: {
     label: "Playful",
@@ -24,7 +22,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-playful",
     intensityRange: [1, 3],
     defaultEnabled: true,
-    emoji: "✨",
   },
   emotional: {
     label: "Emotional",
@@ -32,7 +29,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-emotional",
     intensityRange: [2, 5],
     defaultEnabled: true,
-    emoji: "🌸",
   },
   curious: {
     label: "Curious",
@@ -40,7 +36,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-curious",
     intensityRange: [1, 3],
     defaultEnabled: true,
-    emoji: "🔍",
   },
   memories: {
     label: "Memories",
@@ -48,7 +43,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-memories",
     intensityRange: [1, 4],
     defaultEnabled: true,
-    emoji: "📷",
   },
   future: {
     label: "Future",
@@ -56,7 +50,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-future",
     intensityRange: [1, 4],
     defaultEnabled: true,
-    emoji: "🌅",
   },
   chaotic: {
     label: "Chaotic / Random",
@@ -64,7 +57,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-chaotic",
     intensityRange: [1, 3],
     defaultEnabled: true,
-    emoji: "🎲",
   },
   wouldYouRather: {
     label: "Would You Rather",
@@ -72,7 +64,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-would-you-rather",
     intensityRange: [1, 3],
     defaultEnabled: true,
-    emoji: "⚖️",
   },
   friendship: {
     label: "Friendship",
@@ -80,7 +71,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-friendship",
     intensityRange: [1, 4],
     defaultEnabled: "relationship:friends",
-    emoji: "🤝",
   },
   gettingToKnowYou: {
     label: "Getting to Know You",
@@ -88,7 +78,6 @@ export const CATEGORIES: Record<CategoryId, CategoryDef> = {
     accent: "--cat-getting-to-know-you",
     intensityRange: [1, 2],
     defaultEnabled: "relationship:new",
-    emoji: "👋",
   },
 };
 

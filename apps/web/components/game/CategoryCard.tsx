@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import type { CategoryId } from "@twilight/shared-types";
 import { CATEGORIES, getCategoryColor } from "@/lib/theme/categories";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { categoryCardItem, categoryCardPress } from "@/lib/theme/motion";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 
@@ -41,9 +42,9 @@ export function CategoryCard({ category, gentle = false, onSelect, disabled = fa
         aria-hidden="true"
       />
 
-      {/* Emoji + label row */}
+      {/* Icon + label row */}
       <div className="flex items-center gap-2">
-        <span className="text-xl" aria-hidden="true">{def?.emoji}</span>
+        <CategoryIcon category={category} size={20} />
         <div className="flex items-center gap-2">
           <span
             className="category-label"

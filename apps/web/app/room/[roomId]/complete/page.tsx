@@ -1,12 +1,14 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, Bookmark, RotateCcw, Home } from "lucide-react";
+import { Sparkles, RotateCcw, Home } from "lucide-react";
 import { useGameStore } from "@/lib/state/gameStore";
 import { Button } from "@/components/ui/Button";
 import { CATEGORIES } from "@/lib/theme/categories";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { ToastContainer } from "@/components/ui/Toast";
+import { AfterglowCard } from "@/components/game/AfterglowCard";
 
 interface CompletePageProps {
   params: Promise<{ roomId: string }>;
@@ -25,18 +27,14 @@ export default function CompletePage({ params }: CompletePageProps) {
 
   const roundsCompleted =
     gameCompletedData?.roundsCompleted ?? room?.settings?.rounds ?? 6;
-  const categoriesUsed = gameCompletedData?.categoriesUsed ?? [
-    "deep",
-    "emotional",
-    "playful",
-    "memories",
-  ];
+  const categoriesUsed = (gameCompletedData?.categoriesUsed ?? [
+    "deep", "emotional", "playful", "memories",
+  ]) as any[];
   const durationSeconds = gameCompletedData?.durationSeconds ?? 1420;
   const minutes = Math.floor(durationSeconds / 60);
+  const sessionCount = room?.sessionCount ?? 1;
 
-  const handleSaveHighlights = () => {
-    addToast("Session saved to your Highlights!", "success");
-  };
+  const [showPacingPrompt, setShowPacingPrompt] = useState(sessionCount >= 2);
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--ink-primary)] flex flex-col justify-between p-5 sm:p-8">
@@ -95,7 +93,7 @@ export default function CompletePage({ params }: CompletePageProps) {
                   key={catId}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-xs"
                 >
-                  <span>{def?.emoji ?? "✨"}</span>
+                  <CategoryIcon category={catId as any} size={14} />
                   <span className="font-medium text-[var(--ink-primary)]">
                     {def?.label ?? catId}
                   </span>
@@ -105,17 +103,36 @@ export default function CompletePage({ params }: CompletePageProps) {
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-col gap-3 w-full max-w-sm mt-4">
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={handleSaveHighlights}
-            id="save-highlight-btn"
-          >
-            <Bookmark size={18} className="mr-2" /> Bookmark Session Highlights
-          </Button>
+        {/* Afterglow recap card — develops from desaturated to full colour */}
+        <AfterglowCard
+          categoriesUsed={categoriesUsed}
+          roundsCompleted={roundsCompleted}
+          durationSeconds={durationSeconds}
+        />
 
+        {/* Returning-pair pacing prompt — shown only from the 2nd session onwards */}
+        {showPacingPrompt && (
+          <div className="w-full max-w-sm p-4 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex flex-col gap-2 text-left">
+            <p className="text-sm text-[var(--ink-primary)] font-medium">
+              You two have played a few rounds already.
+            </p>
+            <p className="text-xs text-[var(--ink-secondary)]">
+              Start a little deeper this time? The next session will open at a higher intensity.
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setShowPacingPrompt(false)}
+                className="text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink-primary)] underline underline-offset-2 transition-colors"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Action Controls */}
+        <div className="flex flex-col gap-3 w-full max-w-sm mt-2">
           <Link href="/create" onClick={() => resetGame()} className="w-full">
             <Button variant="primary" size="lg" id="play-again-btn">
               <RotateCcw size={18} className="mr-2" /> Start Another Game

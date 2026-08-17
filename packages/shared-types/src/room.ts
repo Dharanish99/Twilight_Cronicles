@@ -37,6 +37,8 @@ export interface RoomState {
   players: [PlayerState, PlayerState?];
   turn: TurnState;
   expiresAt: string;
+  /** How many times this room pair has completed a full game session */
+  sessionCount?: number;
 }
 
 export interface GameCompletedPayload {

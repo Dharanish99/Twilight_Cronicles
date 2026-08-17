@@ -10,6 +10,9 @@ import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { RoomCodeDisplay } from "@/components/ui/RoomCodeDisplay";
 import { ConnectionIndicator } from "@/components/ui/ConnectionIndicator";
 import { ToastContainer } from "@/components/ui/Toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { threadExtend } from "@/lib/theme/motion";
+import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 
 interface LobbyPageProps {
   params: Promise<{ roomId: string }>;
@@ -34,6 +37,7 @@ export default function LobbyPage({ params }: LobbyPageProps) {
   } = useGameStore();
 
   const [copiedLink, setCopiedLink] = useState(false);
+  const reduced = useReducedMotion();
 
   // Initialize socket ONCE
   useEffect(() => {
@@ -129,7 +133,21 @@ export default function LobbyPage({ params }: LobbyPageProps) {
         </div>
 
         {/* Players Grid */}
-        <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+        <div className="relative grid grid-cols-2 gap-4 w-full max-w-md">
+          {/* Thread between avatars — draws once when bothReady */}
+          <AnimatePresence>
+            {bothReady && (
+              <div
+                aria-hidden="true"
+                className="absolute top-[36px] left-[calc(50%-32px)] right-[calc(50%-32px)] h-[2px] overflow-hidden"
+              >
+                <motion.div
+                  {...threadExtend(reduced)}
+                  className="h-full w-full bg-[var(--accent-ember)] rounded-full origin-left"
+                />
+              </div>
+            )}
+          </AnimatePresence>
           {/* Player 1 Slot */}
           <div className="flex flex-col items-center gap-3 p-5 rounded-[var(--radius-lg)] bg-surface-elevated border border-theme-subtle shadow-sm">
             <PlayerAvatar

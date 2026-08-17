@@ -11,7 +11,8 @@ import { QuestionCard } from "@/components/game/QuestionCard";
 import { WaitingScreen } from "@/components/game/WaitingScreen";
 import { RevealCard } from "@/components/game/RevealCard";
 import { CoinToss } from "@/components/game/CoinToss";
-import { TurnIndicator } from "@/components/ui/TurnIndicator";
+import { ReportModal } from "@/components/game/ReportModal";
+import { DuskArc } from "@/components/ui/DuskArc";
 import { ConnectionIndicator } from "@/components/ui/ConnectionIndicator";
 import { ToastContainer } from "@/components/ui/Toast";
 
@@ -49,6 +50,7 @@ export default function PlayPage({ params }: PlayPageProps) {
   const [activeReactionPopups, setActiveReactionPopups] = useState<
     { id: string; emoji: string }[]
   >([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Initialize socket ONCE on mount
   useEffect(() => {
@@ -193,13 +195,15 @@ export default function PlayPage({ params }: PlayPageProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              href={`/report?roomId=${roomId}&questionId=${currentQuestion?.questionId ?? ""}`}
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
               className="p-2 rounded-full hover:bg-surface-sunken transition-colors text-ink-tertiary hover:text-[var(--danger)]"
               aria-label="Report Question"
+              id="report-question-btn"
             >
               <Flag size={18} />
-            </Link>
+            </button>
             <Link
               href={`/room/${roomId}/settings`}
               className="p-2 rounded-full hover:bg-surface-sunken transition-colors text-ink-tertiary hover:text-ink-primary"
@@ -210,11 +214,13 @@ export default function PlayPage({ params }: PlayPageProps) {
           </div>
         </div>
 
-        <TurnIndicator
-          round={round}
-          totalRounds={totalRounds}
-          roleDescription={getRoleDescription()}
-        />
+        {/* Dusk-Arc Progress Bar + Role Description */}
+        <div className="flex flex-col gap-1.5">
+          <DuskArc round={round} totalRounds={totalRounds} />
+          <span className="text-xs text-ink-secondary font-medium text-right">
+            {getRoleDescription()}
+          </span>
+        </div>
       </header>
 
       {/* Main Interactive Stage */}
@@ -246,7 +252,7 @@ export default function PlayPage({ params }: PlayPageProps) {
                 phase={phase}
                 round={round}
                 totalRounds={totalRounds}
-                customMessage={`${partnerName} is choosing a mood for you…`}
+                questionKey={currentQuestion?.questionId}
               />
             )}
           </>
@@ -260,11 +266,7 @@ export default function PlayPage({ params }: PlayPageProps) {
             chosenCategory={chosenCategory}
             round={round}
             totalRounds={totalRounds}
-            customMessage={
-              isAnswerer
-                ? `Preparing a question in ${chosenCategory ?? "mood"} for you…`
-                : `${partnerName} will answer a question in ${chosenCategory ?? "mood"}…`
-            }
+            questionKey={currentQuestion?.questionId}
           />
         )}
 
@@ -277,6 +279,7 @@ export default function PlayPage({ params }: PlayPageProps) {
                 totalRounds={totalRounds}
                 category={currentQuestion?.category ?? chosenCategory ?? "deep"}
                 question={currentQuestion?.text ?? "Loading question..."}
+                intensity={(currentQuestion as any)?.intensity ?? 3}
                 state={isDraftLocked ? "locked" : "typing"}
                 draft={draftText}
                 onDraftChange={sendDraftUpdate}
@@ -294,7 +297,7 @@ export default function PlayPage({ params }: PlayPageProps) {
                 chosenCategory={chosenCategory}
                 round={round}
                 totalRounds={totalRounds}
-                customMessage={`${partnerName} is answering the ${chosenCategory ?? "selected"} mood question…`}
+                questionKey={currentQuestion?.questionId}
               />
             )}
           </>
@@ -349,6 +352,13 @@ export default function PlayPage({ params }: PlayPageProps) {
         <span>Room Code: <strong className="font-mono">{roomId}</strong></span>
         <span>{room?.settings?.intensityCeiling ?? "Balanced"} Mode</span>
       </footer>
+
+      {/* In-session Report Modal */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        questionId={currentQuestion?.questionId ?? ""}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { CategoryId, ReactionId, AvatarId } from "@twilight/shared-types";
 import { getCategoryColor } from "@/lib/theme/categories";
-import { questionReveal, revealAnswerAppear } from "@/lib/theme/motion";
+import { questionReveal, revealAnswerAppear, reactionBloom } from "@/lib/theme/motion";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/Button";
@@ -36,12 +36,15 @@ export function RevealCard({
   minDwellMs = 1500,
 }: RevealCardProps) {
   const reduced = useReducedMotion();
-  const qAnim = questionReveal(reduced);
-  const aAnim = revealAnswerAppear(reduced);
+  const qAnim    = questionReveal(reduced);
+  const aAnim    = revealAnswerAppear(reduced);
+  const bloomAnim = reactionBloom(reduced);
   const accentColor = getCategoryColor(category);
 
   const [dwellMet, setDwellMet] = useState(false);
   const [reacted, setReacted] = useState<ReactionId | null>(null);
+  // Bloom key increments each time a reaction fires to re-trigger the animation
+  const [bloomKey, setBloomKey] = useState(0);
 
   useEffect(() => {
     const t = setTimeout(() => setDwellMet(true), minDwellMs);
@@ -50,6 +53,7 @@ export function RevealCard({
 
   function handleReact(id: ReactionId) {
     setReacted(id);
+    setBloomKey((k) => k + 1);
     onReact(id);
   }
 
@@ -74,11 +78,24 @@ export function RevealCard({
           </span>
         </div>
 
-        {/* Answer text */}
-        <div className="rounded-[var(--radius-md)] p-5 bg-[var(--bg-sunken)] border border-[var(--border-subtle)]">
-          <p className="text-[var(--ink-primary)] text-base leading-relaxed whitespace-pre-wrap">
+        {/* Answer text with reactionBloom overlay */}
+        <div className="relative rounded-[var(--radius-md)] p-5 bg-[var(--bg-sunken)] border border-[var(--border-subtle)]">
+          <p className="text-[var(--ink-primary)] text-base leading-relaxed whitespace-pre-wrap relative z-10">
             {answer}
           </p>
+
+          {/* Bloom — aria-hidden: decorative flourish, fires on reaction tap */}
+          <AnimatePresence>
+            {reacted && (
+              <motion.div
+                key={bloomKey}
+                {...bloomAnim}
+                aria-hidden="true"
+                className="absolute inset-0 rounded-[var(--radius-md)] pointer-events-none"
+                style={{ background: accentColor }}
+              />
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Reactions */}

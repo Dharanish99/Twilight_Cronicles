@@ -82,6 +82,8 @@ export interface ClientToServerEvents {
 
   "reaction:send": (payload: { reaction: ReactionId }) => void;
 
+  "question:report": (payload: { questionId: string; reason: string }) => void;
+
   "game:start": () => void;
   "game:pause": () => void;
   "game:resume": () => void;

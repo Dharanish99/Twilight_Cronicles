@@ -11,6 +11,7 @@ import {
   setJson,
   getJson,
   keys,
+  redisClient,
   ROOM_TTL_SECONDS,
   TURN_DRAFT_TTL_SECONDS,
 } from "../redis/client";
@@ -149,6 +150,7 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
 
         if (nextRound > roomState.settings.rounds) {
           roomState.status = "completed";
+          roomState.sessionCount = (roomState.sessionCount ?? 0) + 1;
           await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
           io.to(roomId).emit("game:completed", {
             roundsCompleted: roomState.settings.rounds,
@@ -303,6 +305,21 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
 
     } catch (err: any) {
       console.error("[turn:flip_coin] Error:", err);
+    }
+  });
+
+  // question:report — in-session flag; logs report and confirms without interrupting turn
+  socket.on("question:report", async ({ questionId, reason }) => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+    const entry = { questionId, reason, playerId, roomId, ts: new Date().toISOString() };
+    console.warn("[question:report]", JSON.stringify(entry));
+    try {
+      if (redisClient.status === "ready") {
+        await redisClient.rpush("question:reports", JSON.stringify(entry));
+      }
+    } catch {
+      // Non-fatal — report is already logged to console
     }
   });
 }

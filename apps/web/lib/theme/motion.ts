@@ -116,3 +116,112 @@ export const completionGlow = (reduced: boolean) => ({
     ? { duration: 0 }
     : { duration: 0.6, ease: EASE_OUT },
 });
+
+// ─── NEW TOKENS (design/motion pass) ─────────────────────────────────────────
+
+/**
+ * inkSettle — text mounts with a blur-dissolve combined with questionReveal.
+ * Run concurrently with questionReveal, not after. Purely visual; text is in the
+ * DOM immediately for the a11y tree.
+ * Reduced: instant render, no blur.
+ */
+export const inkSettle = (reduced: boolean) => ({
+  initial: reduced ? { filter: "blur(0px)", opacity: 1 } : { filter: "blur(6px)", opacity: 0 },
+  animate: { filter: "blur(0px)", opacity: 1 },
+  transition: reduced
+    ? { duration: 0 }
+    : { duration: 0.35, ease: EASE_OUT },
+});
+
+/**
+ * lockSeal — "Lock it in" tapped. Scale settle + brief inset-shadow.
+ * The navigator.vibrate(12) call must be performed at the call-site,
+ * not inside this token — motion tokens are pure data.
+ * Reduced: instant style swap, no scale.
+ */
+export const lockSeal = (reduced: boolean) => ({
+  animate: reduced
+    ? {}
+    : {
+        scale: [1, 0.98, 1],
+        boxShadow: [
+          "inset 0 0 0 0px var(--accent-ember)",
+          "inset 0 0 0 2px var(--accent-ember)",
+          "inset 0 0 0 0px var(--accent-ember)",
+        ],
+      },
+  transition: reduced
+    ? { duration: 0 }
+    : { duration: 0.22, ease: EASE_IN_OUT },
+});
+
+/**
+ * shareDrift — locked card exits by translating toward the trailing screen edge.
+ * Apply as `exit` on the locked card AnimatePresence wrapper.
+ * Reduced: instant fade only, no translate.
+ */
+export const shareDrift = (reduced: boolean) => ({
+  initial: { opacity: 1, x: 0 },
+  exit: reduced
+    ? { opacity: 0 }
+    : { opacity: 0, x: 32 },
+  transition: reduced
+    ? { duration: 0.15 }
+    : { duration: 0.3, ease: EASE_IN_OUT },
+});
+
+/**
+ * skipDrift — dismissed question drifts down, replacement fades in from below.
+ * Use `exit` on the dismissed card and `initial` on the entering card.
+ * Reduced: instant crossfade.
+ */
+export const skipDriftExit = (reduced: boolean) => ({
+  exit: reduced ? { opacity: 0 } : { opacity: 0, y: 12 },
+  transition: reduced ? { duration: 0.1 } : { duration: 0.2, ease: EASE_OUT },
+});
+
+export const skipDriftEnter = (reduced: boolean) => ({
+  initial: reduced ? { opacity: 0 } : { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  transition: reduced ? { duration: 0.1 } : { duration: 0.2, ease: EASE_OUT },
+});
+
+/**
+ * threadExtend — a line draws between two points.
+ * Implemented via SVG `pathLength` or scaleX on a div.
+ * Reduced: instant full-length line, no draw-on animation.
+ */
+export const threadExtend = (reduced: boolean) => ({
+  initial: { scaleX: 0, originX: 0 },
+  animate: { scaleX: 1 },
+  transition: reduced
+    ? { duration: 0 }
+    : { duration: 0.6, ease: EASE_OUT },
+});
+
+/**
+ * afterglowDevelop — card starts desaturated+blurred, resolves like a photograph developing.
+ * Reduced: instant full-clarity render.
+ */
+export const afterglowDevelop = (reduced: boolean) => ({
+  initial: reduced
+    ? { filter: "saturate(1) blur(0px)", opacity: 1 }
+    : { filter: "saturate(0.1) blur(4px)", opacity: 0.6 },
+  animate: { filter: "saturate(1) blur(0px)", opacity: 1 },
+  transition: reduced
+    ? { duration: 0 }
+    : { duration: 0.7, ease: EASE_OUT },
+});
+
+/**
+ * reactionBloom — brief soft bloom behind the answer area when a reaction is tapped.
+ * Shorter than afterglowDevelop, ~300ms, purely visual flourish.
+ * Reduced: instant show, no scale.
+ */
+export const reactionBloom = (reduced: boolean) => ({
+  initial: { opacity: 0, scale: reduced ? 1 : 0.85 },
+  animate: { opacity: [0, 0.35, 0], scale: reduced ? 1 : [0.85, 1.15, 1] },
+  transition: reduced
+    ? { duration: 0 }
+    : { duration: 0.3, ease: EASE_IN_OUT },
+});

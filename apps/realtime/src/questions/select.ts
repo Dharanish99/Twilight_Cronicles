@@ -96,15 +96,16 @@ export async function selectQuestion(
   let ceiling = getCeiling(round, settings);
   if (skipsThisTurn >= 2) ceiling = Math.max(1, ceiling - 1);
 
-  function filterCandidates(intCeiling: number): SeedQuestion[] {
+  function filterCandidates(intCeiling: number, ignoreRelationship = false): SeedQuestion[] {
     return seedQuestions.filter((q) => {
       if (q.category !== category) return false;
       if (q.intensity > intCeiling) return false;
       if (q.intensity < 1) return false;
       if (q.minRound && round < q.minRound) return false;
       if (usedIds.has(q.id)) return false;
-      if (relationshipType && !q.relationshipFit.includes(relationshipType)) {
-        if (category === "friendship") return false;
+      // Apply relationship filter to all categories unless told to ignore it
+      if (!ignoreRelationship && relationshipType && !q.relationshipFit.includes(relationshipType)) {
+        return false;
       }
       return true;
     });
@@ -112,19 +113,34 @@ export async function selectQuestion(
 
   let candidates = filterCandidates(ceiling);
 
+  // Fallback 1: drop relationship filter (keeps intensity constraint)
+  if (candidates.length === 0 && relationshipType) {
+    candidates = filterCandidates(ceiling, true);
+  }
+
+  // Fallback 2: widen intensity by 1 (with relationship filter)
   if (candidates.length === 0) {
     candidates = filterCandidates(ceiling + 1);
   }
 
+  // Fallback 3: widen intensity AND drop relationship filter
+  if (candidates.length === 0) {
+    candidates = filterCandidates(ceiling + 1, true);
+  }
+
+  // Fallback 4: safe-default questions in the same category
   if (candidates.length === 0) {
     candidates = seedQuestions.filter(
-      (q) =>
-        q.category === category &&
-        q.tags.includes("safe_default") &&
-        !usedIds.has(q.id)
+      (q) => q.category === category && q.tags.includes("safe_default") && !usedIds.has(q.id)
     );
   }
 
+  // Fallback 5: any unused question in this category
+  if (candidates.length === 0) {
+    candidates = seedQuestions.filter((q) => q.category === category && !usedIds.has(q.id));
+  }
+
+  // Fallback 6: any question in this category (pool exhausted)
   if (candidates.length === 0) {
     candidates = seedQuestions.filter((q) => q.category === category);
   }
@@ -147,12 +163,11 @@ export async function selectQuestion(
 
   let pool = candidates;
   if (previousSubcategory) {
-    const diffSub = candidates.filter(
-      (q) => q.subcategory !== previousSubcategory
-    );
+    const diffSub = candidates.filter((q) => q.subcategory !== previousSubcategory);
     if (diffSub.length > 0) pool = diffSub;
   }
 
+  // Fresh uniform random pick — no ordering bias
   const picked = pool[Math.floor(Math.random() * pool.length)]!;
   return picked;
 }
