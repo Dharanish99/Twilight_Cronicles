@@ -10,6 +10,7 @@ import type {
 import {
   setJson,
   getJson,
+  deleteKey,
   keys,
   redisClient,
   ROOM_TTL_SECONDS,
@@ -138,6 +139,8 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
 
       const question = await getJson<SeedQuestion>(keys.turnQuestion(roomId));
       const draft = await getJson<{ text: string; playerId: string }>(keys.turnDraft(roomId));
+      // Load any doodle queued by the waiting player this turn
+      const doodleEntry = await getJson<{ dataUrl: string; senderPlayerId: string }>(keys.turnDoodle(roomId));
 
       if (roomState.turn.phase === "shared") {
         // Continue clicked -> next question via coin toss!
@@ -203,7 +206,15 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
           name: answerer?.displayName ?? "Partner",
           avatar: (answerer?.avatar as string) ?? "ember",
         },
+        // Deliver doodle at Reveal — never during answering
+        ...(doodleEntry ? { doodleDataUrl: doodleEntry.dataUrl } : {}),
       });
+
+      // Clean up the doodle now that it's been delivered
+      if (doodleEntry) {
+        await deleteKey(keys.turnDoodle(roomId));
+      }
+
       io.to(roomId).emit("room:state_snapshot", roomState);
     } catch (err: any) {
       console.error("[turn:answer_share] Error:", err);
@@ -320,6 +331,33 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
       }
     } catch {
       // Non-fatal — report is already logged to console
+    }
+  });
+
+  // doodle:send — waiting player queues a doodle; stored server-side, delivered at Reveal.
+  // The active (answering) player's client receives NOTHING until turn:answer_shared fires.
+  socket.on("doodle:send", async ({ dataUrl, round }) => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+
+    // Basic validation: must be a data URL and under 300KB
+    if (!dataUrl.startsWith("data:image/") || dataUrl.length > 300_000) return;
+
+    try {
+      const roomState = await getJson<import("@twilight/shared-types").RoomState>(keys.room(roomId));
+      if (!roomState) return;
+
+      // Only store if turn round matches (prevents stale doodle from a previous turn)
+      if (roomState.turn.round !== round) return;
+
+      await setJson(
+        keys.turnDoodle(roomId),
+        { dataUrl, senderPlayerId: playerId },
+        TURN_DRAFT_TTL_SECONDS, // same ephemeral TTL as drafts
+      );
+      console.log(`[doodle:send] Queued for room ${roomId}, round ${round}`);
+    } catch (err: any) {
+      console.error("[doodle:send] Error:", err);
     }
   });
 }

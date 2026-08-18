@@ -307,7 +307,11 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("game:completed", (data: GameCompletedPayload) => {
-          set({ gameCompletedData: data });
+          set((state) => ({
+            gameCompletedData: data,
+            // Also mark the room as completed so play/page.tsx's router effect fires
+            room: state.room ? { ...state.room, status: "completed" } : null,
+          }));
         });
 
         socket.on("reaction:received", ({ from, reaction }: { from: string; reaction: ReactionId }) => {

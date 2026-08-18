@@ -6,6 +6,7 @@ import { getCategoryColor } from "@/lib/theme/categories";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { lobbyPulse } from "@/lib/theme/motion";
 import { getTimedCopy, pickCopy, CHOOSING_QUESTION_COPY } from "@/lib/copy/pools";
+import { DoodleModal } from "./DoodleModal";
 
 interface WaitingScreenProps {
   partnerName: string;
@@ -61,6 +62,10 @@ export function WaitingScreen({
 }: WaitingScreenProps) {
   const reduced = useReducedMotion();
   const pulseProps = lobbyPulse(reduced);
+  const [doodleOpen, setDoodleOpen] = useState(false);
+
+  // Doodle entry only visible during answering + locked phases
+  const showDoodle = phase === "answering" || phase === "locked";
 
   // Pick loading copy once per question_loading mount — stable for the full beat
   const loadingCopyRef = useRef<string>(pickCopy(CHOOSING_QUESTION_COPY));
@@ -186,6 +191,7 @@ export function WaitingScreen({
         aria-hidden="true"
       />
 
+      {/* Copy + round indicator */}
       <div className="flex flex-col gap-2 max-w-sm relative z-10">
         {/* Announce only on actual text change — aria-live="polite" on parent */}
         <p className="text-2xl text-ink-primary font-serif transition-all duration-500">
@@ -194,7 +200,26 @@ export function WaitingScreen({
         <p className="text-sm text-ink-tertiary tabular-nums">
           Question {round} of {totalRounds}
         </p>
+
+        {/* Doodle entry — text-style, not a competing CTA */}
+        {showDoodle && (
+          <button
+            onClick={() => setDoodleOpen(true)}
+            className="mt-2 text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink-secondary)] underline underline-offset-2 decoration-dotted transition-colors"
+            aria-label="Open doodle canvas"
+          >
+            Doodle while you wait
+          </button>
+        )}
       </div>
+
+      {/* Doodle modal — portaled, respects privacy model */}
+      <DoodleModal
+        isOpen={doodleOpen}
+        onClose={() => setDoodleOpen(false)}
+        partnerName={partnerName}
+        currentRound={round}
+      />
     </div>
   );
 }

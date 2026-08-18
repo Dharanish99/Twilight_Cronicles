@@ -17,6 +17,8 @@ export interface AnswerSharedPayload {
   category: CategoryId;
   answerText: string;
   answeredBy: { id: string; name: string; avatar: string };
+  /** DataURL of a doodle sent by the waiting player this turn (optional) */
+  doodleDataUrl?: string;
 }
 
 // Server -> Client events
@@ -83,6 +85,9 @@ export interface ClientToServerEvents {
   "reaction:send": (payload: { reaction: ReactionId }) => void;
 
   "question:report": (payload: { questionId: string; reason: string }) => void;
+
+  /** Send a doodle drawn during the waiting phase. Stored server-side, delivered at Reveal. */
+  "doodle:send": (payload: { dataUrl: string; round: number }) => void;
 
   "game:start": () => void;
   "game:pause": () => void;

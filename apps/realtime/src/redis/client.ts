@@ -28,6 +28,7 @@ export const keys = {
   turnDraft: (sessionId: string) => `turn_draft:${sessionId}`,
   turnLocked: (sessionId: string) => `turn_locked:${sessionId}`,
   turnQuestion: (sessionId: string) => `turn_question:${sessionId}`,
+  turnDoodle: (sessionId: string) => `turn_doodle:${sessionId}`,
   usedQuestions: (sessionId: string) => `used_questions:${sessionId}`,
   rateLimit: (ip: string, action: string) => `ratelimit:${action}:${ip}`,
 };

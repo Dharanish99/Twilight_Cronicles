@@ -12,6 +12,7 @@ import { WaitingScreen } from "@/components/game/WaitingScreen";
 import { RevealCard } from "@/components/game/RevealCard";
 import { CoinToss } from "@/components/game/CoinToss";
 import { ReportModal } from "@/components/game/ReportModal";
+import { AnswerSentScreen } from "@/components/game/AnswerSentScreen";
 import { DuskArc } from "@/components/ui/DuskArc";
 import { ConnectionIndicator } from "@/components/ui/ConnectionIndicator";
 import { ToastContainer } from "@/components/ui/Toast";
@@ -51,6 +52,8 @@ export default function PlayPage({ params }: PlayPageProps) {
     { id: string; emoji: string }[]
   >([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  // Session-level used quote IDs — prevents same quote appearing in consecutive turns
+  const [usedQuoteIds, setUsedQuoteIds] = useState<Set<string>>(new Set());
 
   // Initialize socket ONCE on mount
   useEffect(() => {
@@ -318,30 +321,19 @@ export default function PlayPage({ params }: PlayPageProps) {
                 }}
                 onReact={handleReact}
                 onContinue={handleContinueAfterReveal}
+                doodleDataUrl={(sharedAnswer as any).doodleDataUrl}
+                doodleSenderName={partner?.displayName}
               />
             ) : (
-              /* Answerer sees "Answer Submitted" with a calming message */
-              <div className="w-full max-w-xl mx-auto flex flex-col items-center gap-8 text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-[var(--accent-ember-tint)] flex items-center justify-center">
-                  <span className="text-3xl">✓</span>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <h2 className="font-display text-2xl sm:text-3xl text-[var(--ink-primary)]">
-                    Answer Sent
-                  </h2>
-                  <p className="text-sm text-[var(--ink-secondary)] max-w-xs mx-auto">
-                    {partnerName} is reading your answer right now…
-                  </p>
-                </div>
-                <div className="mt-4 px-8 py-5 rounded-[var(--radius-lg)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] max-w-sm">
-                  <p className="text-[var(--ink-secondary)] text-sm italic leading-relaxed">
-                    "The most beautiful thing about conversations at twilight is that people finally say what they've been thinking all day."
-                  </p>
-                </div>
-                <p className="text-xs text-[var(--ink-tertiary)] animate-pulse">
-                  Waiting for {partnerName} to continue…
-                </p>
-              </div>
+              /* Answerer sees "Answer Submitted" with a literary quote */
+              <AnswerSentScreen
+                partnerName={partnerName}
+                category={sharedAnswer.category}
+                usedQuoteIds={usedQuoteIds}
+                onQuoteShown={(id) =>
+                  setUsedQuoteIds((prev) => new Set(prev).add(id))
+                }
+              />
             )}
           </>
         )}
