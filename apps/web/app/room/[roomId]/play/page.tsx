@@ -4,7 +4,6 @@ import { useEffect, use, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings as SettingsIcon, Flag, Pencil, ImageIcon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import type { CategoryId, ReactionId } from "@twilight/shared-types";
 import { useGameStore } from "@/lib/state/gameStore";
 import { CategoryGrid } from "@/components/game/CategoryGrid";
@@ -281,17 +280,8 @@ export default function PlayPage({ params }: PlayPageProps) {
 
       {/* Main Interactive Stage */}
       <main className="max-w-2xl mx-auto w-full my-auto py-8">
-        <AnimatePresence mode="wait">
-
         {/* PHASE 0: COIN TOSS */}
         {(phase === "coin_toss_waiting" || phase === "coin_toss_flipping") && player1 && player2 && (
-          <motion.div
-            key="coin-toss"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          >
           <CoinToss
             player1={player1}
             player2={player2}
@@ -300,18 +290,11 @@ export default function PlayPage({ params }: PlayPageProps) {
             phase={phase}
             onFlip={flipCoin}
           />
-          </motion.div>
         )}
 
         {/* PHASE 1: CHOOSING CATEGORY */}
         {phase === "choosing_category" && (
-          <motion.div
-            key="choosing-category"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <>
             {isPicker ? (
               <CategoryGrid
                 enabledCategories={room?.settings?.categories}
@@ -327,38 +310,24 @@ export default function PlayPage({ params }: PlayPageProps) {
                 questionKey={currentQuestion?.questionId}
               />
             )}
-          </motion.div>
+          </>
         )}
 
         {/* PHASE 2: QUESTION LOADING */}
         {phase === "question_loading" && (
-          <motion.div
-            key="question-loading"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <WaitingScreen
-              partnerName={partnerName}
-              phase={phase}
-              chosenCategory={chosenCategory}
-              round={round}
-              totalRounds={totalRounds}
-              questionKey={currentQuestion?.questionId}
-            />
-          </motion.div>
+          <WaitingScreen
+            partnerName={partnerName}
+            phase={phase}
+            chosenCategory={chosenCategory}
+            round={round}
+            totalRounds={totalRounds}
+            questionKey={currentQuestion?.questionId}
+          />
         )}
 
         {/* PHASE 3 & 4: ANSWERING & LOCKED */}
         {(phase === "answering" || phase === "locked") && (
-          <motion.div
-            key="answering"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, x: 24 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <>
             {isAnswerer ? (
               <QuestionCard
                 round={round}
@@ -386,18 +355,12 @@ export default function PlayPage({ params }: PlayPageProps) {
                 questionKey={currentQuestion?.questionId}
               />
             )}
-          </motion.div>
+          </>
         )}
 
         {/* PHASE 5: SHARED / REVEAL */}
         {phase === "shared" && sharedAnswer && (
-          <motion.div
-            key="reveal"
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <>
             {isPicker ? (
               <RevealCard
                 question={sharedAnswer.text}
@@ -418,10 +381,8 @@ export default function PlayPage({ params }: PlayPageProps) {
                 onQuoteShown={(id) => setUsedQuoteIds((prev) => new Set(prev).add(id))}
               />
             )}
-          </motion.div>
+          </>
         )}
-
-        </AnimatePresence>
       </main>
 
       {/* Floating Doodle FAB — only for waiting player during active question */}
