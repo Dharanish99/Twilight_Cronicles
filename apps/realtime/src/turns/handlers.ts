@@ -139,8 +139,6 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
 
       const question = await getJson<SeedQuestion>(keys.turnQuestion(roomId));
       const draft = await getJson<{ text: string; playerId: string }>(keys.turnDraft(roomId));
-      // Load any doodle queued by the waiting player this turn
-      const doodleEntry = await getJson<{ dataUrl: string; senderPlayerId: string }>(keys.turnDoodle(roomId));
 
       if (roomState.turn.phase === "shared") {
         // Continue clicked -> next question via coin toss!
@@ -206,14 +204,7 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
           name: answerer?.displayName ?? "Partner",
           avatar: (answerer?.avatar as string) ?? "ember",
         },
-        // Deliver doodle at Reveal — never during answering
-        ...(doodleEntry ? { doodleDataUrl: doodleEntry.dataUrl } : {}),
       });
-
-      // Clean up the doodle now that it's been delivered
-      if (doodleEntry) {
-        await deleteKey(keys.turnDoodle(roomId));
-      }
 
       io.to(roomId).emit("room:state_snapshot", roomState);
     } catch (err: any) {
@@ -334,30 +325,67 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
     }
   });
 
-  // doodle:send — waiting player queues a doodle; stored server-side, delivered at Reveal.
-  // The active (answering) player's client receives NOTHING until turn:answer_shared fires.
+  // doodle:send — session-persistent gallery. Doodle is broadcast to BOTH players immediately.
+  // Only valid when the sender is the non-answering (waiting) player.
   socket.on("doodle:send", async ({ dataUrl, round }) => {
     const { roomId, playerId } = socket.data;
     if (!roomId || !playerId) return;
 
-    // Basic validation: must be a data URL and under 300KB
+    // Basic validation: data URL, under 300KB
     if (!dataUrl.startsWith("data:image/") || dataUrl.length > 300_000) return;
 
     try {
       const roomState = await getJson<import("@twilight/shared-types").RoomState>(keys.room(roomId));
       if (!roomState) return;
 
-      // Only store if turn round matches (prevents stale doodle from a previous turn)
-      if (roomState.turn.round !== round) return;
+      // Only the waiting (non-answering) player may send doodles
+      if (roomState.turn.answererPlayerId === playerId) return;
 
-      await setJson(
-        keys.turnDoodle(roomId),
-        { dataUrl, senderPlayerId: playerId },
-        TURN_DRAFT_TTL_SECONDS, // same ephemeral TTL as drafts
-      );
-      console.log(`[doodle:send] Queued for room ${roomId}, round ${round}`);
+      const sender = roomState.players.find((p) => p && p.id === playerId);
+      if (!sender) return;
+
+      const entry: import("@twilight/shared-types").DoodleEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        dataUrl,
+        senderPlayerId: playerId,
+        senderName: sender.displayName,
+        round,
+        timestamp: Date.now(),
+        reactions: {},
+      };
+
+      // Append to session gallery (max 50)
+      const gallery = (await getJson<import("@twilight/shared-types").DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
+      if (gallery.length >= 50) gallery.shift();
+      gallery.push(entry);
+      await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
+
+      // Broadcast immediately to both players
+      io.to(roomId).emit("doodle:new", entry);
+      console.log(`[doodle:send] Gallery entry ${entry.id} for room ${roomId} round ${round}`);
     } catch (err: any) {
       console.error("[doodle:send] Error:", err);
+    }
+  });
+
+  // doodle:react — add/update an emoji reaction to a doodle (1 per player per doodle)
+  socket.on("doodle:react", async ({ doodleId, emoji }) => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+    // Emoji must be a non-empty string under 16 chars
+    if (!emoji || emoji.length > 16) return;
+
+    try {
+      const gallery = (await getJson<import("@twilight/shared-types").DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
+      const entry = gallery.find((e) => e.id === doodleId);
+      if (!entry) return;
+
+      entry.reactions[playerId] = emoji;
+      await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
+
+      io.to(roomId).emit("doodle:reaction_updated", { doodleId, playerId, emoji });
+    } catch (err: any) {
+      console.error("[doodle:react] Error:", err);
     }
   });
 }

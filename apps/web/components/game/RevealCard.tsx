@@ -27,9 +27,6 @@ interface RevealCardProps {
   onContinue: () => void;
   /** Minimum ms before Continue appears — prevents accidental double-tap */
   minDwellMs?: number;
-  /** DataURL of a doodle the waiting player sent this turn (optional) */
-  doodleDataUrl?: string;
-  doodleSenderName?: string;
 }
 
 export function RevealCard({
@@ -40,8 +37,6 @@ export function RevealCard({
   onReact,
   onContinue,
   minDwellMs = 1800,
-  doodleDataUrl,
-  doodleSenderName,
 }: RevealCardProps) {
   const reduced    = useReducedMotion();
   const inkAnim    = inkSettle(reduced);
@@ -169,27 +164,6 @@ export function RevealCard({
           </div>
         </div>
       </motion.div>
-
-      {/* ── Doodle reveal — if waiting player sent one this turn ─────────── */}
-      {doodleDataUrl && (
-        <motion.div
-          initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={reduced ? { duration: 0.15 } : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] overflow-hidden"
-        >
-          <div className="px-4 pt-3 pb-1">
-            <p className="text-xs text-[var(--ink-tertiary)] font-medium">
-              {doodleSenderName ?? "Your partner"} doodled this while you answered
-            </p>
-          </div>
-          <img
-            src={doodleDataUrl}
-            alt={`Doodle from ${doodleSenderName ?? "your partner"}`}
-            className="w-full object-contain max-h-48"
-          />
-        </motion.div>
-      )}
 
       {/* ── Continue ─────────────────────────────────────────────────────── */}
       {dwellMet && (

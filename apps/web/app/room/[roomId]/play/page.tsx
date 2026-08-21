@@ -3,7 +3,7 @@
 import { useEffect, use, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Settings as SettingsIcon, Flag } from "lucide-react";
+import { Settings as SettingsIcon, Flag, Pencil, ImageIcon } from "lucide-react";
 import type { CategoryId, ReactionId } from "@twilight/shared-types";
 import { useGameStore } from "@/lib/state/gameStore";
 import { CategoryGrid } from "@/components/game/CategoryGrid";
@@ -13,6 +13,8 @@ import { RevealCard } from "@/components/game/RevealCard";
 import { CoinToss } from "@/components/game/CoinToss";
 import { ReportModal } from "@/components/game/ReportModal";
 import { AnswerSentScreen } from "@/components/game/AnswerSentScreen";
+import { DoodlePanel } from "@/components/game/DoodlePanel";
+import { PlayerLeftOverlay } from "@/components/game/PlayerLeftOverlay";
 import { DuskArc } from "@/components/ui/DuskArc";
 import { ConnectionIndicator } from "@/components/ui/ConnectionIndicator";
 import { ToastContainer } from "@/components/ui/Toast";
@@ -46,14 +48,24 @@ export default function PlayPage({ params }: PlayPageProps) {
     removeToast,
     myServerId,
     flipCoin,
+    doodleGallery,
+    sendDoodle,
+    sendDoodleReaction,
+    partnerLeft,
+    setPartnerLeft,
   } = useGameStore();
 
   const [activeReactionPopups, setActiveReactionPopups] = useState<
     { id: string; emoji: string }[]
   >([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isDoodlePanelOpen, setIsDoodlePanelOpen] = useState(false);
+  const [overlayDismissed, setOverlayDismissed]   = useState(false);
   // Session-level used quote IDs — prevents same quote appearing in consecutive turns
   const [usedQuoteIds, setUsedQuoteIds] = useState<Set<string>>(new Set());
+  // Track unread doodle count (increments when panel is closed + new entry arrives)
+  const prevGalleryLen = useRef(0);
+  const [unreadDoodles, setUnreadDoodles] = useState(0);
 
   // Initialize socket ONCE on mount
   useEffect(() => {
@@ -83,39 +95,54 @@ export default function PlayPage({ params }: PlayPageProps) {
     }
   }, [room?.status, roomId, router]);
 
-  // ─────────── PLAYER IDENTITY (Robust via Server Handshake) ───────────
+  // Unread badge — increment when panel is closed and gallery grows
+  useEffect(() => {
+    if (doodleGallery.length > prevGalleryLen.current) {
+      if (!isDoodlePanelOpen) {
+        setUnreadDoodles((n) => n + (doodleGallery.length - prevGalleryLen.current));
+      }
+    }
+    prevGalleryLen.current = doodleGallery.length;
+  }, [doodleGallery.length, isDoodlePanelOpen]);
+
+  // Clear unread when panel opens
+  useEffect(() => {
+    if (isDoodlePanelOpen) setUnreadDoodles(0);
+  }, [isDoodlePanelOpen]);
+
+  // Reset overlay-dismissed when partner reconnects
+  useEffect(() => {
+    if (!partnerLeft) setOverlayDismissed(false);
+  }, [partnerLeft]);
+
+  // ─────────── PLAYER IDENTITY ───────────
   const player1 = room?.players?.[0];
   const player2 = room?.players?.[1];
 
-  // We exclusively trust myServerId from the room:identity event
   const isMePlayer1 = !!(myServerId && player1 && myServerId === player1.id);
   const isMePlayer2 = !!(myServerId && player2 && myServerId === player2.id);
-
   const resolvedIsMeP1 = isMePlayer1 && !isMePlayer2 ? true : !isMePlayer2 && !isMePlayer1 ? true : isMePlayer1;
 
-  const myPlayer = resolvedIsMeP1 ? player1 : player2;
-  const partner = resolvedIsMeP1 ? player2 : player1;
+  const myPlayer  = resolvedIsMeP1 ? player1 : player2;
+  const partner   = resolvedIsMeP1 ? player2 : player1;
   const partnerName = partner?.displayName ?? "Partner";
 
-  const turn = room?.turn;
-  const round = turn?.round ?? 1;
-  const totalRounds = room?.settings?.rounds ?? 6;
-  const phase = turn?.phase ?? "choosing_category";
+  const turn         = room?.turn;
+  const round        = turn?.round ?? 1;
+  const totalRounds  = room?.settings?.rounds ?? 6;
+  const phase        = turn?.phase ?? "choosing_category";
   const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
 
-  // Role determination: compare my actual server-side player ID with the turn's picker/answerer IDs
-  const isPicker = !!(myServerId && turn?.pickerPlayerId === myServerId);
+  const isPicker   = !!(myServerId && turn?.pickerPlayerId === myServerId);
   const isAnswerer = !!(myServerId && turn?.answererPlayerId === myServerId);
-  const isTosser = !!(myServerId && turn?.tosserPlayerId === myServerId);
+  const isTosser   = !!(myServerId && turn?.tosserPlayerId === myServerId);
+  // Waiting = not the answerer (during active question phases)
+  const isWaiting  = !isAnswerer && (phase === "answering" || phase === "locked");
 
   const getRoleDescription = () => {
-    if (phase === "coin_toss_waiting" || phase === "coin_toss_flipping") {
-      return "🪙 Coin toss ceremony";
-    }
+    if (phase === "coin_toss_waiting" || phase === "coin_toss_flipping") return "🪙 Coin toss";
     if (phase === "choosing_category" || phase === "question_loading") {
-      return isPicker
-        ? `You are choosing a mood for ${partnerName}`
-        : `${partnerName} is choosing a mood for you`;
+      return isPicker ? `You are choosing for ${partnerName}` : `${partnerName} is choosing…`;
     }
     if (phase === "answering" || phase === "locked") {
       return isAnswerer ? "Your turn to answer" : `${partnerName} is answering`;
@@ -123,69 +150,76 @@ export default function PlayPage({ params }: PlayPageProps) {
     return "Answer revealed";
   };
 
-  const handleSelectCategory = useCallback(
-    (cat: CategoryId) => selectCategory(cat),
-    [selectCategory]
-  );
+  const handleSelectCategory = useCallback((cat: CategoryId) => selectCategory(cat), [selectCategory]);
 
-  const handleReact = useCallback(
-    (reaction: ReactionId) => {
-      sendReaction(reaction);
-      const emojiMap: Record<ReactionId, string> = {
-        heart: "❤️",
-        spark: "✨",
-        soft: "🥺",
-        same: "💯",
-        surprising: "😮",
-      };
-      const popId = `${Date.now()}`;
-      setActiveReactionPopups((prev) => [
-        ...prev,
-        { id: popId, emoji: emojiMap[reaction] || "✨" },
-      ]);
-      setTimeout(() => {
-        setActiveReactionPopups((prev) => prev.filter((p) => p.id !== popId));
-      }, 2000);
-    },
-    [sendReaction]
-  );
+  const handleReact = useCallback((reaction: ReactionId) => {
+    sendReaction(reaction);
+    const emojiMap: Record<ReactionId, string> = {
+      heart: "❤️", spark: "✨", soft: "🥺", same: "💯", surprising: "😮",
+    };
+    const popId = `${Date.now()}`;
+    setActiveReactionPopups((prev) => [...prev, { id: popId, emoji: emojiMap[reaction] || "✨" }]);
+    setTimeout(() => setActiveReactionPopups((prev) => prev.filter((p) => p.id !== popId)), 2000);
+  }, [sendReaction]);
 
-  const handleContinueAfterReveal = useCallback(() => {
-    shareAnswer();
-  }, [shareAnswer]);
+  const handleContinueAfterReveal = useCallback(() => shareAnswer(), [shareAnswer]);
+
+  const handleSendDoodle = useCallback((dataUrl: string, r: number) => {
+    sendDoodle(dataUrl, r);
+  }, [sendDoodle]);
+
+  const handleDoodleReact = useCallback((doodleId: string, emoji: string) => {
+    sendDoodleReaction(doodleId, emoji);
+  }, [sendDoodleReaction]);
+
+  // Show partner-left overlay
+  const showPartnerLeft = !!partnerLeft && !overlayDismissed;
 
   // Debug role state in development
   useEffect(() => {
     if (process.env.NODE_ENV === "development" && turn && myPlayer) {
       console.log("[PlayPage] Identity debug:", {
-        localPlayerId: localPlayer?.id,
-        localPlayerName: localPlayer?.displayName,
-        myServerId: myPlayer.id,
-        myServerName: myPlayer.displayName,
-        pickerPlayerId: turn.pickerPlayerId,
-        answererPlayerId: turn.answererPlayerId,
-        isPicker,
-        isAnswerer,
-        phase: turn.phase,
+        myServerId: myPlayer.id, myServerName: myPlayer.displayName,
+        pickerPlayerId: turn.pickerPlayerId, answererPlayerId: turn.answererPlayerId,
+        isPicker, isAnswerer, phase: turn.phase,
       });
     }
-  }, [turn?.phase, turn?.pickerPlayerId, turn?.answererPlayerId, isPicker, isAnswerer, localPlayer, myPlayer]);
+  }, [turn?.phase, turn?.pickerPlayerId, turn?.answererPlayerId, isPicker, isAnswerer, myPlayer]);
 
   return (
     <div className="min-h-screen bg-surface-base text-ink-primary flex flex-col justify-between p-5 sm:p-8 relative overflow-hidden">
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
 
-      {/* Real-time Reaction Floating Bubbles */}
+      {/* Real-time reaction bubbles */}
       <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
         {activeReactionPopups.map((p) => (
-          <span
-            key={p.id}
-            className="text-6xl animate-bounce duration-1000 opacity-90"
-          >
-            {p.emoji}
-          </span>
+          <span key={p.id} className="text-6xl animate-bounce duration-1000 opacity-90">{p.emoji}</span>
         ))}
       </div>
+
+      {/* Player Left overlay — highest priority */}
+      {showPartnerLeft && partnerLeft && (
+        <PlayerLeftOverlay
+          partnerName={partnerLeft.displayName}
+          roomId={roomId}
+          onDismiss={() => setOverlayDismissed(true)}
+        />
+      )}
+
+      {/* Doodle Panel */}
+      <DoodlePanel
+        isOpen={isDoodlePanelOpen}
+        onClose={() => setIsDoodlePanelOpen(false)}
+        isWaiting={isWaiting}
+        currentRound={round}
+        gallery={doodleGallery}
+        myPlayerId={myServerId ?? ""}
+        partnerName={partnerName}
+        partnerAvatarId={(partner?.avatar ?? "dusk") as any}
+        myAvatarId={(myPlayer?.avatar ?? "ember") as any}
+        onSendDoodle={handleSendDoodle}
+        onReact={handleDoodleReact}
+      />
 
       {/* Header */}
       <header className="max-w-2xl mx-auto w-full flex flex-col gap-3 py-2 border-b border-theme-subtle pb-4">
@@ -217,18 +251,36 @@ export default function PlayPage({ params }: PlayPageProps) {
           </div>
         </div>
 
-        {/* Dusk-Arc Progress Bar + Role Description */}
+        {/* Progress bar + role + doodle gallery button */}
         <div className="flex flex-col gap-1.5">
           <DuskArc round={round} totalRounds={totalRounds} />
-          <span className="text-xs text-ink-secondary font-medium text-right">
-            {getRoleDescription()}
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ink-secondary font-medium">
+              {getRoleDescription()}
+            </span>
+
+            {/* Doodle gallery button — below progress bar, top-right */}
+            <button
+              onClick={() => setIsDoodlePanelOpen(true)}
+              className="relative flex items-center gap-1.5 text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink-secondary)] transition-colors px-2 py-1 rounded-full hover:bg-[var(--bg-sunken)]"
+              aria-label={`Open doodle gallery${unreadDoodles > 0 ? `, ${unreadDoodles} new` : ""}`}
+              id="doodle-gallery-btn"
+            >
+              <ImageIcon size={14} />
+              <span>Doodles</span>
+              {unreadDoodles > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[var(--accent-ember)] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center tabular-nums">
+                  {unreadDoodles > 9 ? "9+" : unreadDoodles}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Interactive Stage */}
       <main className="max-w-2xl mx-auto w-full my-auto py-8">
-        {/* PHASE 0: 3D COIN TOSS CEREMONY */}
+        {/* PHASE 0: COIN TOSS */}
         {(phase === "coin_toss_waiting" || phase === "coin_toss_flipping") && player1 && player2 && (
           <CoinToss
             player1={player1}
@@ -310,7 +362,6 @@ export default function PlayPage({ params }: PlayPageProps) {
         {phase === "shared" && sharedAnswer && (
           <>
             {isPicker ? (
-              /* Picker sees the full answer + reactions + Continue */
               <RevealCard
                 question={sharedAnswer.text}
                 category={sharedAnswer.category}
@@ -321,23 +372,30 @@ export default function PlayPage({ params }: PlayPageProps) {
                 }}
                 onReact={handleReact}
                 onContinue={handleContinueAfterReveal}
-                doodleDataUrl={(sharedAnswer as any).doodleDataUrl}
-                doodleSenderName={partner?.displayName}
               />
             ) : (
-              /* Answerer sees "Answer Submitted" with a literary quote */
               <AnswerSentScreen
                 partnerName={partnerName}
                 category={sharedAnswer.category}
                 usedQuoteIds={usedQuoteIds}
-                onQuoteShown={(id) =>
-                  setUsedQuoteIds((prev) => new Set(prev).add(id))
-                }
+                onQuoteShown={(id) => setUsedQuoteIds((prev) => new Set(prev).add(id))}
               />
             )}
           </>
         )}
       </main>
+
+      {/* Floating Doodle FAB — only for waiting player during active question */}
+      {isWaiting && (
+        <button
+          onClick={() => setIsDoodlePanelOpen(true)}
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-[var(--accent-ember)] text-white rounded-full shadow-[0_4px_20px_rgba(225,89,42,0.4)] flex items-center justify-center hover:shadow-[0_6px_28px_rgba(225,89,42,0.55)] active:scale-95 transition-all"
+          aria-label="Open doodle canvas"
+          id="doodle-fab"
+        >
+          <Pencil size={22} strokeWidth={2} />
+        </button>
+      )}
 
       {/* Footer */}
       <footer className="max-w-2xl mx-auto w-full text-center py-4 text-xs text-ink-tertiary flex justify-between items-center">

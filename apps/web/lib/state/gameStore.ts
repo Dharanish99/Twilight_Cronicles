@@ -13,6 +13,7 @@ import type {
   AnswerSharedPayload,
   GameCompletedPayload,
   RoomSettings,
+  DoodleEntry,
 } from "@twilight/shared-types";
 import {
   getSocket,
@@ -65,6 +66,15 @@ interface GameStore {
   gameCompletedData: GameCompletedPayload | null;
   setGameCompletedData: (data: GameCompletedPayload | null) => void;
 
+  /** Session-persistent doodle gallery — all doodles from both players this session */
+  doodleGallery: DoodleEntry[];
+  addDoodleEntry: (entry: DoodleEntry) => void;
+  updateDoodleReaction: (doodleId: string, playerId: string, emoji: string) => void;
+
+  /** Set when a player has permanently left (5s after disconnect) */
+  partnerLeft: { playerId: string; displayName: string } | null;
+  setPartnerLeft: (info: { playerId: string; displayName: string } | null) => void;
+
   toasts: ToastMessage[];
   addToast: (message: string, variant?: "success" | "neutral") => void;
   removeToast: (id: string) => void;
@@ -92,6 +102,8 @@ interface GameStore {
   shareAnswer: () => void;
   skipQuestion: () => void;
   sendReaction: (reaction: ReactionId) => void;
+  sendDoodle: (dataUrl: string, round: number) => void;
+  sendDoodleReaction: (doodleId: string, emoji: string) => void;
   resetGame: () => void;
 }
 
@@ -137,6 +149,21 @@ export const useGameStore = create<GameStore>()(
 
       gameCompletedData: null,
       setGameCompletedData: (data) => set({ gameCompletedData: data }),
+
+      doodleGallery: [],
+      addDoodleEntry: (entry) =>
+        set((state) => ({ doodleGallery: [...state.doodleGallery, entry] })),
+      updateDoodleReaction: (doodleId, playerId, emoji) =>
+        set((state) => ({
+          doodleGallery: state.doodleGallery.map((d) =>
+            d.id === doodleId
+              ? { ...d, reactions: { ...d.reactions, [playerId]: emoji } }
+              : d
+          ),
+        })),
+
+      partnerLeft: null,
+      setPartnerLeft: (info) => set({ partnerLeft: info }),
 
       toasts: [],
       addToast: (message, variant = "neutral") => {
@@ -349,6 +376,18 @@ export const useGameStore = create<GameStore>()(
           });
         });
 
+        socket.on("doodle:new", (entry: DoodleEntry) => {
+          get().addDoodleEntry(entry);
+        });
+
+        socket.on("doodle:reaction_updated", ({ doodleId, playerId, emoji }: { doodleId: string; playerId: string; emoji: string }) => {
+          get().updateDoodleReaction(doodleId, playerId, emoji);
+        });
+
+        socket.on("player:left", ({ playerId, displayName }: { playerId: string; displayName: string }) => {
+          set({ partnerLeft: { playerId, displayName } });
+        });
+
         socket.on("error:invalid_room", ({ reason }: { reason: string }) => {
           get().addToast(reason || "Invalid room", "neutral");
         });
@@ -423,6 +462,14 @@ export const useGameStore = create<GameStore>()(
 
       sendReaction: (reaction) => {
         getSocket().emit("reaction:send", { reaction });
+      },
+
+      sendDoodle: (dataUrl, round) => {
+        getSocket().emit("doodle:send", { dataUrl, round });
+      },
+
+      sendDoodleReaction: (doodleId, emoji) => {
+        getSocket().emit("doodle:react", { doodleId, emoji });
       },
 
       resetGame: () => {

@@ -255,7 +255,26 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
         player.connection = "reconnecting";
         await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
         io.to(roomId).emit("player:disconnected", { playerId });
+        console.log(`[disconnect] Player ${player.displayName} (${playerId}) disconnected from room ${roomId}`);
       }
+
+      // 5-second grace window: if still not reconnected → emit player:left
+      const displayName = player?.displayName ?? "Partner";
+      setTimeout(async () => {
+        try {
+          const fresh = await getJson<RoomState>(keys.room(roomId));
+          if (!fresh) return;
+          const p = fresh.players.find((pl) => pl && pl.id === playerId);
+          // Still in "reconnecting" state after grace period = they left
+          if (p && p.connection === "reconnecting") {
+            io.to(roomId).emit("player:left", { playerId, displayName: p.displayName });
+            console.log(`[disconnect] player:left emitted for ${p.displayName} in room ${roomId}`);
+          }
+        } catch (err) {
+          console.error("[disconnect] Grace-period player:left check error:", err);
+        }
+      }, 5000);
+
     } catch (err) {
       console.error("[disconnect] Error:", err);
     }
