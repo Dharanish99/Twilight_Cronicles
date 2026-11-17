@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { AnswerSharedPayload, RoomState } from "@twilight/shared-types";
+import { hydrateLocalPlayerProfile, mergeLocalPlayerIdentity } from "./localPlayerIdentity";
 import { reconcileRoomSnapshot } from "./reconcileRoomSnapshot";
 
 const answer: AnswerSharedPayload = {
@@ -70,4 +71,20 @@ test("clears reveal data as soon as the room leaves the shared phase", () => {
   const result = reconcileRoomSnapshot(current, answer, room("coin_toss_waiting", 2, answer));
   assert.equal(result.sharedAnswer, null);
   assert.equal(result.room.sharedAnswer, null);
+});
+
+test("persists a resumable identity even if the local profile has not hydrated yet", () => {
+  const identity = mergeLocalPlayerIdentity(null, {
+    playerId: "p2",
+    sessionToken: "a".repeat(64),
+    roomId: "ROOM1",
+  });
+  assert.equal(identity.id, "p2");
+  assert.equal(identity.sessionToken, "a".repeat(64));
+  assert.equal(identity.roomId, "ROOM1");
+
+  const profile = hydrateLocalPlayerProfile(identity, room("shared").players[1]);
+  assert.equal(profile?.displayName, "Player Two");
+  assert.equal(profile?.avatar, "rose");
+  assert.equal(profile?.sessionToken, "a".repeat(64));
 });

@@ -26,15 +26,11 @@ import {
   markListenersInitialized,
 } from "../socket/client";
 import { reconcileRoomSnapshot } from "./reconcileRoomSnapshot";
-
-interface LocalPlayer {
-  id: string;
-  displayName: string;
-  avatar: AvatarId;
-  relationshipType?: RelationshipType;
-  sessionToken?: string;
-  roomId?: string;
-}
+import {
+  hydrateLocalPlayerProfile,
+  mergeLocalPlayerIdentity,
+  type LocalPlayerIdentity,
+} from "./localPlayerIdentity";
 
 interface ToastMessage {
   id: string;
@@ -43,8 +39,8 @@ interface ToastMessage {
 }
 
 interface GameStore {
-  localPlayer: LocalPlayer | null;
-  setLocalPlayer: (player: LocalPlayer) => void;
+  localPlayer: LocalPlayerIdentity | null;
+  setLocalPlayer: (player: LocalPlayerIdentity) => void;
 
   myServerId: string | null;
   setMyServerId: (id: string | null) => void;
@@ -251,9 +247,7 @@ export const useGameStore = create<GameStore>()(
         socket.on("room:identity", ({ playerId, sessionToken, roomId }) => {
           set((state) => ({
             myServerId: playerId,
-            localPlayer: state.localPlayer
-              ? { ...state.localPlayer, sessionToken, roomId }
-              : state.localPlayer,
+            localPlayer: mergeLocalPlayerIdentity(state.localPlayer, { playerId, sessionToken, roomId }),
           }));
         });
 
@@ -263,10 +257,14 @@ export const useGameStore = create<GameStore>()(
               roomState.status === "completed" ||
               ["coin_toss_waiting", "coin_toss_flipping", "choosing_category"].includes(roomState.turn.phase);
             const reconciled = reconcileRoomSnapshot(state.room, state.sharedAnswer, roomState);
+            const ownPlayer = state.myServerId
+              ? roomState.players.find((player) => player?.id === state.myServerId)
+              : undefined;
             if (shouldClearTurnDraft) cancelDraftSync();
             return {
               room: reconciled.room,
               sharedAnswer: reconciled.sharedAnswer,
+              ...(ownPlayer ? { localPlayer: hydrateLocalPlayerProfile(state.localPlayer, ownPlayer) } : {}),
               ...(shouldClearTurnDraft
                 ? { currentQuestion: null, draftText: "", isDraftLocked: false }
                 : {}),
@@ -490,6 +488,7 @@ export const useGameStore = create<GameStore>()(
 
         socket.on("error:invalid_room", ({ reason }: { reason: string }) => {
           if (/session has expired|room has expired/i.test(reason)) {
+            clearSocketSessionResume();
             set((state) => ({
               localPlayer: state.localPlayer
                 ? { ...state.localPlayer, sessionToken: undefined, roomId: undefined }
