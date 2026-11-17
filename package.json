@@ -7,7 +7,8 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "test": "pnpm --filter @twilight/realtime exec tsx --test src/turns/coin.test.ts ../../apps/web/lib/state/reconcileRoomSnapshot.test.ts"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

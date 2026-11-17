@@ -10,6 +10,7 @@ import { CategoryGrid } from "@/components/game/CategoryGrid";
 import { QuestionCard } from "@/components/game/QuestionCard";
 import { WaitingScreen } from "@/components/game/WaitingScreen";
 import { RevealCard } from "@/components/game/RevealCard";
+import { RevealRecovery } from "@/components/game/RevealRecovery";
 import { CoinToss } from "@/components/game/CoinToss";
 import { ReportModal } from "@/components/game/ReportModal";
 import { AnswerSentScreen } from "@/components/game/AnswerSentScreen";
@@ -44,6 +45,7 @@ export default function PlayPage({ params }: PlayPageProps) {
     skipQuestion,
     sendReaction,
     resumeRoom,
+    syncRoomState,
     initSocketListeners,
     toasts,
     removeToast,
@@ -139,7 +141,8 @@ export default function PlayPage({ params }: PlayPageProps) {
   const totalRounds  = room?.settings?.rounds ?? 6;
   const phase        = turn?.phase ?? "choosing_category";
   const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
-  const reportableQuestionId = currentQuestion?.questionId ?? sharedAnswer?.questionId ?? "";
+  const revealAnswer = phase === "shared" ? sharedAnswer ?? room?.sharedAnswer ?? null : null;
+  const reportableQuestionId = currentQuestion?.questionId ?? revealAnswer?.questionId ?? "";
 
   const isPicker   = !!(myServerId && turn?.pickerPlayerId === myServerId);
   const isAnswerer = !!(myServerId && turn?.answererPlayerId === myServerId);
@@ -170,7 +173,9 @@ export default function PlayPage({ params }: PlayPageProps) {
     if (phase === "answering" || phase === "locked") {
       return isAnswerer ? "Your turn to answer" : `${partnerName} is answering`;
     }
-    return "Answer revealed";
+    if (phase === "shared") return "Answer revealed";
+    if (phase === "transitioning") return "Preparing the next turn…";
+    return "Syncing game state…";
   };
 
   const handleSelectCategory = useCallback((cat: CategoryId) => selectCategory(cat), [selectCategory]);
@@ -322,6 +327,7 @@ export default function PlayPage({ params }: PlayPageProps) {
             player1={player1}
             player2={player2}
             winnerId={turn?.tossWinnerId || ""}
+            tosserName={turn?.tosserPlayerId === player2.id ? player2.displayName : player1.displayName}
             isTosser={isTosser}
             phase={phase}
             onFlip={flipCoin}
@@ -394,16 +400,16 @@ export default function PlayPage({ params }: PlayPageProps) {
         )}
 
         {/* PHASE 5: SHARED / REVEAL */}
-        {phase === "shared" && sharedAnswer && (
-          <>
-            {isPicker ? (
+        {phase === "shared" && (
+          revealAnswer ? (
+            isPicker ? (
               <RevealCard
-                question={sharedAnswer.text}
-                category={sharedAnswer.category}
-                answer={sharedAnswer.answerText}
+                question={revealAnswer.text}
+                category={revealAnswer.category}
+                answer={revealAnswer.answerText}
                 answeredBy={{
-                  name: sharedAnswer.answeredBy.name,
-                  avatar: sharedAnswer.answeredBy.avatar,
+                  name: revealAnswer.answeredBy.name,
+                  avatar: revealAnswer.answeredBy.avatar,
                 }}
                 onReact={handleReact}
                 onContinue={handleContinueAfterReveal}
@@ -411,12 +417,17 @@ export default function PlayPage({ params }: PlayPageProps) {
             ) : (
               <AnswerSentScreen
                 partnerName={partnerName}
-                category={sharedAnswer.category}
+                category={revealAnswer.category}
                 usedQuoteIds={usedQuoteIds}
                 onQuoteShown={handleQuoteShown}
               />
-            )}
-          </>
+            )
+          ) : (
+            <RevealRecovery
+              connected={connectionStatus === "connected"}
+              onRetry={syncRoomState}
+            />
+          )
         )}
       </main>
 

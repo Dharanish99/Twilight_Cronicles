@@ -11,6 +11,7 @@ type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 let socketInstance: TypedSocket | null = null;
 let listenersInitialized = false;
 let resumeSocketId: string | null = null;
+let resumeSessionToken: string | null = null;
 
 export function getSocket(): TypedSocket {
   if (!socketInstance) {
@@ -44,6 +45,7 @@ export function getSocket(): TypedSocket {
     socketInstance.on("connect", () => {
       resumeSocketId = null;
       console.log("[Socket] Connected to realtime server with id:", socketInstance?.id);
+      emitResumeIfReady();
     });
 
     socketInstance.on("disconnect", (reason) => {
@@ -74,14 +76,27 @@ export function disconnectSocket(): void {
     socketInstance = null;
     listenersInitialized = false;
     resumeSocketId = null;
+    resumeSessionToken = null;
   }
 }
 
 export function resumeSocketSession(sessionToken: string): void {
-  const socket = connectSocket();
-  if (!socket.connected || !socket.id || resumeSocketId === socket.id) return;
+  resumeSessionToken = sessionToken;
+  connectSocket();
+  emitResumeIfReady();
+}
+
+/** Stop automatic room recovery after the player intentionally leaves. */
+export function clearSocketSessionResume(): void {
+  resumeSessionToken = null;
+  resumeSocketId = null;
+}
+
+function emitResumeIfReady(): void {
+  const socket = socketInstance;
+  if (!resumeSessionToken || !socket?.connected || !socket.id || resumeSocketId === socket.id) return;
   resumeSocketId = socket.id;
-  socket.emit("room:resume", { sessionToken });
+  socket.emit("room:resume", { sessionToken: resumeSessionToken });
 }
 
 /**

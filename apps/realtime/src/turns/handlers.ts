@@ -23,6 +23,7 @@ import {
 import { loadRoom, playerChannel, saveRoom, touchRoom } from "../rooms/state";
 import { selectQuestion, type SeedQuestion } from "../questions/select";
 import { scheduleCoinTossAdvance } from "./schedule";
+import { pickCoinTossWinner } from "./coin";
 
 type AppServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -333,7 +334,7 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
           return;
         }
 
-        const winner = Math.random() < 0.5 ? p1 : p2;
+        const winner = pickCoinTossWinner([p1, p2]);
         const loser = winner.id === p1.id ? p2 : p1;
         transitionDelay = 4500;
         room.turn.phase = "coin_toss_flipping";

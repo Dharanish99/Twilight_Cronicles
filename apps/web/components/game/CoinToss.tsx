@@ -10,6 +10,7 @@ interface CoinTossProps {
   player1: PlayerState;
   player2: PlayerState;
   winnerId: string;
+  tosserName: string;
   isTosser: boolean;
   phase: "coin_toss_waiting" | "coin_toss_flipping";
   onFlip?: () => void;
@@ -47,15 +48,20 @@ function LandingParticles({ active, accentColor }: { active: boolean; accentColo
   );
 }
 
-export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }: CoinTossProps) {
+export function CoinToss({ player1, player2, winnerId, tosserName, isTosser, phase, onFlip }: CoinTossProps) {
   const reduced = useReducedMotion();
   const [stage, setStage] = useState<Stage>("intro");
   const coinControls = useAnimationControls();
 
-  const resolvedWinnerId = winnerId || player1.id;
-  const isWinnerP1 = resolvedWinnerId === player1.id;
-  const winner = isWinnerP1 ? player1 : player2;
-  const loser  = isWinnerP1 ? player2 : player1;
+  const hasValidWinner = winnerId === player1.id || winnerId === player2.id;
+  const isWinnerP1 = winnerId === player1.id;
+  const winner = hasValidWinner ? (isWinnerP1 ? player1 : player2) : null;
+  const loser = hasValidWinner ? (isWinnerP1 ? player2 : player1) : null;
+  // A phase event can arrive a moment before its authoritative snapshot. Keep
+  // the coin in a neutral state until the server's persisted winner is present.
+  const displayStage: Stage = phase === "coin_toss_flipping" && stage === "intro"
+    ? "spinning"
+    : stage;
 
   // Ember warm tone for P1 face, dusk-blue for P2 face
   const P1_FACE_BG = "linear-gradient(145deg, hsl(18 76% 56%), hsl(18 76% 44%))";
@@ -71,7 +77,9 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
   // The number of full face-alternations visible determines how "many flips" it looks like.
   // Final rotateY: P1 wins → end on front face (even multiple of 360); P2 wins → end on back (+ 180)
   const baseRotations = 6; // ~6 full turns
-  const finalRotY     = isWinnerP1 ? baseRotations * 360 : baseRotations * 360 + 180;
+  const finalRotY     = hasValidWinner
+    ? (isWinnerP1 ? baseRotations * 360 : baseRotations * 360 + 180)
+    : 0;
   // Overshoot: go 8° past, then back
   const overshoot     = 8;
 
@@ -85,12 +93,12 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
 
     setStage("spinning");
 
-    // 3-keyframe animation:
+    // Four matching keyframes keep the rotation, lift, and scale on the same timeline:
     // 1. Rise + fast spin start
     // 2. Overshoot past final angle
     // 3. Settle at final
     await coinControls.start({
-      rotateY: [0, finalRotY + overshoot, finalRotY],
+      rotateY: [0, finalRotY * 0.55, finalRotY + overshoot, finalRotY],
       y: [0, -100, -100, 0],
       scale: [1, 1.1, 1.1, 1.0],
     }, {
@@ -106,17 +114,17 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
   }, [coinControls, finalRotY, reduced]);
 
   useEffect(() => {
-    if (phase !== "coin_toss_flipping") return;
+    if (phase !== "coin_toss_flipping" || !hasValidWinner) return;
     const frame = window.requestAnimationFrame(() => void runFlipAnimation());
     return () => window.cancelAnimationFrame(frame);
-  }, [phase, runFlipAnimation]);
+  }, [phase, hasValidWinner, runFlipAnimation]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 text-center px-4">
 
       {/* ── Header copy ────────────────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
-        {stage === "intro" && (
+        {displayStage === "intro" && (
           <motion.div
             key="intro-hdr"
             initial={{ opacity: 0, y: -8 }}
@@ -132,7 +140,7 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
               Toss time.
             </h2>
             <div className="mt-4 h-12 flex items-center justify-center">
-              {isTosser ? (
+              {phase === "coin_toss_waiting" && isTosser ? (
                 /* Breathing Flip Coin button */
                 <motion.button
                   onClick={onFlip}
@@ -145,14 +153,14 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
                 </motion.button>
               ) : (
                 <p className="text-sm text-ink-tertiary animate-pulse">
-                  Waiting for {player1.displayName} to flip…
+                  Waiting for {tosserName} to flip…
                 </p>
               )}
             </div>
           </motion.div>
         )}
 
-        {stage === "spinning" && (
+        {displayStage === "spinning" && (
           <motion.div
             key="spinning-hdr"
             initial={{ opacity: 0 }}
@@ -161,12 +169,12 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
             transition={{ duration: 0.15 }}
           >
             <p className="text-sm text-ink-tertiary tracking-widest animate-pulse font-mono">
-              Tossing…
+              {phase === "coin_toss_flipping" && !hasValidWinner ? "Confirming toss result…" : "Tossing…"}
             </p>
           </motion.div>
         )}
 
-        {stage === "result" && (
+        {displayStage === "result" && winner && (
           <motion.div
             key="result-hdr"
             initial={{ opacity: 0, y: -8 }}
@@ -188,7 +196,7 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
       <div className="flex items-center gap-8 text-sm">
         <motion.div
           animate={
-            stage === "result"
+            displayStage === "result" && hasValidWinner
               ? { scale: isWinnerP1 ? 1.08 : 1, color: isWinnerP1 ? "var(--accent-ember)" : "var(--ink-tertiary)" }
               : { scale: 1, color: "var(--ink-secondary)" }
           }
@@ -203,7 +211,7 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
 
         <motion.div
           animate={
-            stage === "result"
+            displayStage === "result" && hasValidWinner
               ? { scale: !isWinnerP1 ? 1.08 : 1, color: !isWinnerP1 ? "var(--accent-ember)" : "var(--ink-tertiary)" }
               : { scale: 1, color: "var(--ink-secondary)" }
           }
@@ -221,22 +229,22 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
         style={{ perspective: "1200px", width: 160, height: 180 }}
       >
         {/* Landing particles */}
-        <LandingParticles active={stage === "result"} accentColor="hsl(18 76% 52%)" />
+        <LandingParticles active={displayStage === "result" && hasValidWinner} accentColor="hsl(18 76% 52%)" />
 
         {/* Floor shadow */}
         <motion.div
           animate={
-            stage === "spinning"
+            displayStage === "spinning"
               ? { scale: [1, 0.3, 0.3, 1.1, 1], opacity: [0.3, 0.07, 0.07, 0.4, 0.3] }
               : { scale: 1, opacity: 0.3 }
           }
-          transition={{ duration: stage === "spinning" ? 2.8 : 0.5, ease: "easeInOut" }}
+          transition={{ duration: displayStage === "spinning" ? 2.8 : 0.5, ease: "easeInOut" }}
           className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-24 h-5 rounded-full bg-black/15 blur-lg pointer-events-none"
         />
 
         {/* Landing glow bloom */}
         <AnimatePresence>
-          {stage === "result" && !reduced && (
+          {displayStage === "result" && hasValidWinner && !reduced && (
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: [0, 0.4, 0], scale: [0.85, 1.3, 1.0] }}
@@ -276,7 +284,7 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
               transform: "translateZ(1px)",
               background: P1_FACE_BG,
               border: `3px solid ${P1_BORDER}`,
-              boxShadow: stage === "result" && isWinnerP1 ? winnerGlow : "0 4px 20px rgba(0,0,0,0.2)",
+              boxShadow: displayStage === "result" && hasValidWinner && isWinnerP1 ? winnerGlow : "0 4px 20px rgba(0,0,0,0.2)",
             }}
           >
             <PlayerAvatar avatar={player1.avatar} name={player1.displayName} size="md" />
@@ -294,7 +302,7 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
               transform: "rotateY(180deg) translateZ(1px)",
               background: P2_FACE_BG,
               border: `3px solid ${P2_BORDER}`,
-              boxShadow: stage === "result" && !isWinnerP1 ? winnerGlow : "0 4px 20px rgba(0,0,0,0.2)",
+              boxShadow: displayStage === "result" && hasValidWinner && !isWinnerP1 ? winnerGlow : "0 4px 20px rgba(0,0,0,0.2)",
             }}
           >
             <PlayerAvatar avatar={player2.avatar} name={player2.displayName} size="md" />
@@ -308,7 +316,7 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
       {/* ── Result banner ─────────────────────────────────────────────────── */}
       <div className="h-16 flex items-center justify-center">
         <AnimatePresence>
-          {stage === "result" && (
+          {displayStage === "result" && winner && loser && (
             <motion.p
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}

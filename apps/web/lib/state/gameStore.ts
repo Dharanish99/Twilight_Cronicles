@@ -20,10 +20,12 @@ import {
   getSocket,
   connectSocket,
   disconnectSocket,
+  clearSocketSessionResume,
   resumeSocketSession,
   areListenersInitialized,
   markListenersInitialized,
 } from "../socket/client";
+import { reconcileRoomSnapshot } from "./reconcileRoomSnapshot";
 
 interface LocalPlayer {
   id: string;
@@ -98,6 +100,7 @@ interface GameStore {
     relationshipType?: RelationshipType
   ) => void;
   resumeRoom: () => void;
+  syncRoomState: () => void;
   leaveRoom: () => void;
   clearLocalData: () => void;
   toggleReady: () => void;
@@ -255,15 +258,16 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("room:state_snapshot", (roomState: RoomState) => {
-          set(() => {
-            const shouldClearAnswer =
+          set((state) => {
+            const shouldClearTurnDraft =
               roomState.status === "completed" ||
               ["coin_toss_waiting", "coin_toss_flipping", "choosing_category"].includes(roomState.turn.phase);
-            if (shouldClearAnswer) cancelDraftSync();
+            const reconciled = reconcileRoomSnapshot(state.room, state.sharedAnswer, roomState);
+            if (shouldClearTurnDraft) cancelDraftSync();
             return {
-              room: roomState,
-              sharedAnswer: roomState.sharedAnswer ?? null,
-              ...(shouldClearAnswer
+              room: reconciled.room,
+              sharedAnswer: reconciled.sharedAnswer,
+              ...(shouldClearTurnDraft
                 ? { currentQuestion: null, draftText: "", isDraftLocked: false }
                 : {}),
             };
@@ -349,15 +353,18 @@ export const useGameStore = create<GameStore>()(
         socket.on("turn:phase_update", ({ phase, chosenCategory }: { phase: TurnPhase; chosenCategory?: CategoryId }) => {
           set((state) => {
             if (!state.room) return {};
+            const sharedAnswer = phase === "shared" ? state.sharedAnswer ?? state.room.sharedAnswer ?? null : null;
             return {
               room: {
                 ...state.room,
+                sharedAnswer,
                 turn: {
                   ...state.room.turn,
                   phase,
                   ...(chosenCategory ? { chosenCategory } : {}),
                 },
               },
+              sharedAnswer,
               ...(phase === "answering" ? { isDraftLocked: false } : {}),
             };
           });
@@ -384,6 +391,7 @@ export const useGameStore = create<GameStore>()(
             room: state.room
               ? {
                   ...state.room,
+                  sharedAnswer: payload,
                   turn: {
                     ...state.room.turn,
                     phase: "shared" as TurnPhase,
@@ -536,8 +544,16 @@ export const useGameStore = create<GameStore>()(
         resumeSocketSession(sessionToken);
       },
 
+      syncRoomState: () => {
+        const sessionToken = get().localPlayer?.sessionToken;
+        if (!sessionToken) return;
+        get().initSocketListeners();
+        resumeSocketSession(sessionToken);
+      },
+
       leaveRoom: () => {
         cancelDraftSync();
+        clearSocketSessionResume();
         const socket = getSocket();
         if (socket.connected) socket.emit("room:leave");
         set((state) => ({
