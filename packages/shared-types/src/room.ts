@@ -20,6 +20,10 @@ export interface TurnState {
   phase: TurnPhase;
   chosenCategory?: CategoryId;
   skipsThisTurn: number;
+  /** Server timestamp used to keep answer timers in sync after reconnects. */
+  answerDeadlineAt?: string | null;
+  /** Server timestamp used to resume a coin-toss transition after a restart. */
+  phaseEndsAt?: string | null;
 }
 
 export interface RoomSettings {
@@ -37,6 +41,17 @@ export interface RoomState {
   players: [PlayerState, PlayerState?];
   turn: TurnState;
   expiresAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  usedCategories?: CategoryId[];
+  /** Visible only after the answer has been shared with both players. */
+  sharedAnswer?: {
+    questionId: string;
+    text: string;
+    category: CategoryId;
+    answerText: string;
+    answeredBy: { id: string; name: string; avatar: AvatarId };
+  } | null;
   /** How many times this room pair has completed a full game session */
   sessionCount?: number;
 }

@@ -1,28 +1,20 @@
-﻿{
-    "name":  "twilight-chronicles",
-    "version":  "0.0.1",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "turbo dev",
-                    "build":  "turbo build",
-                    "lint":  "turbo lint",
-                    "typecheck":  "turbo typecheck"
-                },
-    "devDependencies":  {
-                            "turbo":  "^2.0.0",
-                            "typescript":  "^5.5.0"
-                        },
-    "engines":  {
-                    "node":  "\u003e=20.0.0",
-                    "pnpm":  "\u003e=9.0.0"
-                },
-    "pnpm":  {
-                 "onlyBuiltDependencies":  [
-                                               "@prisma/client",
-                                               "@prisma/engines",
-                                               "esbuild",
-                                               "prisma",
-                                               "unrs-resolver"
-                                           ]
-             }
+{
+  "name": "twilight-chronicles",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=20.9.0",
+    "pnpm": ">=9.0.0"
+  }
 }

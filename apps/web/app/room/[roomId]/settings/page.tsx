@@ -2,8 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Moon, Sun, Volume2, LogOut, Copy, Check } from "lucide-react";
+import { ArrowLeft, Moon, Sun, LogOut, Copy, Check } from "lucide-react";
 import { useThemeStore } from "@/lib/state/themeStore";
 import { useGameStore } from "@/lib/state/gameStore";
 import { Button } from "@/components/ui/Button";
@@ -19,15 +18,16 @@ export default function RoomSettingsPage({ params }: SettingsPageProps) {
   const router = useRouter();
 
   const { theme, toggleTheme } = useThemeStore();
-  const { toasts, removeToast, addToast, resetGame } = useGameStore();
+  const { room, toasts, removeToast, addToast, leaveRoom } = useGameStore();
 
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const inviteUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/join?code=${roomId}`
+      ? room?.inviteToken
+        ? `${window.location.origin}/join?token=${encodeURIComponent(room.inviteToken)}`
+        : `${window.location.origin}/join?code=${roomId}`
       : "";
 
   const handleCopyLink = async () => {
@@ -39,7 +39,7 @@ export default function RoomSettingsPage({ params }: SettingsPageProps) {
   };
 
   const handleExitRoom = () => {
-    resetGame();
+    leaveRoom();
     router.push("/");
   };
 
@@ -88,28 +88,6 @@ export default function RoomSettingsPage({ params }: SettingsPageProps) {
           </div>
           <Button variant="secondary" size="md" onClick={toggleTheme}>
             Toggle
-          </Button>
-        </div>
-
-        {/* Audio Setting */}
-        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Volume2 size={20} className="text-[var(--ink-secondary)]" />
-            <div>
-              <p className="text-sm font-semibold text-[var(--ink-primary)]">
-                Subtle Haptics &amp; Audio
-              </p>
-              <p className="text-xs text-[var(--ink-tertiary)]">
-                {soundEnabled ? "Enabled" : "Muted"}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-          >
-            {soundEnabled ? "Mute" : "Enable"}
           </Button>
         </div>
 

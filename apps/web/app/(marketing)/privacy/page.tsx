@@ -7,28 +7,28 @@ export const metadata: Metadata = {
 
 const SECTIONS = [
   {
-    title: "1. Ephemeral by Default",
-    body: "We believe private conversations should stay private. Your draft answers are held ephemerally in Redis memory solely for the active session, with a hard time-to-live (TTL) of 24 hours. They are never committed to permanent databases or logs.",
+    title: "1. Room data and retention",
+    body: "The realtime service stores room state in Redis so both players can stay in sync and reconnect. This includes display names, avatars, room settings, the current question, a shared answer until the next turn, an unshared answer draft, and doodles sent in the room. Room data expires after 24 hours without activity. A hosting provider may retain operational logs under its own retention policy.",
   },
   {
-    title: "2. Server-Side Answer Privacy",
-    body: "While you are typing your answer, zero keystrokes or text fragments are streamed to the other participant. The server does not transmit the answer payload until you explicitly tap 'Share with [Player]'.",
+    title: "2. Private drafts",
+    body: "Your draft is sent to the realtime service as you type so it can be restored after a connection drop. The service does not send the draft to the other player until you choose to share it. Drafts are not end-to-end encrypted, so the service operator and Redis host can process them while the room is active.",
   },
   {
-    title: "3. Encrypted Highlights (Opt-in)",
-    body: "If both players mutually choose to bookmark an answer as a Highlight, the content is encrypted at rest using AES-256-GCM before being stored in the database. Keys are managed server-side and never exposed to the client bundle.",
+    title: "3. Guest identity",
+    body: "The game does not require an account or email address. Your display name and avatar are visible to the other player. A random room-resume token is kept in this browser tab's session storage; anyone who obtains that token may be able to rejoin the same player slot until it expires.",
   },
   {
-    title: "4. No Third-Party Tracking or Ads",
-    body: "Twilight Chronicles contains no advertising networks, no data brokers, and no tracking pixels. We only collect anonymous aggregated metrics (such as round completion rates and general question skip counts) to balance our question deck.",
+    title: "4. Reports and highlights",
+    body: "Question reports are queued with the question ID, selected reason, room code, and submission time. They do not include your display name or answer. Saved highlights and long-term answer history are not available; answers are not written to the PostgreSQL schema in this version.",
   },
   {
-    title: "5. Guest Accounts & Session Tokens",
-    body: "When playing as a guest, we store no personally identifiable information (PII). Authentication uses secure, HttpOnly session tokens that automatically expire when the session concludes.",
+    title: "5. Cookies and advertising",
+    body: "The app does not intentionally use advertising or analytics trackers. It uses browser session storage for the guest resume token and local storage for your theme preference. The hosting platform and infrastructure providers may process network and security data to deliver the service.",
   },
   {
-    title: "6. Data Deletion",
-    body: "You can delete all your stored highlights or account history at any time through the Settings page. Deletion is instantaneous and permanent.",
+    title: "6. Clearing this device",
+    body: "The Settings page can clear the guest token and theme preference from this browser. This does not immediately remove an existing room from Redis; room data expires after 24 hours without activity. To ask about a report or privacy concern, contact the service operator using the Contact page.",
   },
 ];
 
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
         Privacy Policy
       </h1>
       <p className="text-[var(--ink-tertiary)] text-sm mb-10">
-        Effective date: January 1, 2026
+        Effective date: November 17, 2026
       </p>
 
       <div className="flex flex-col gap-8 text-[var(--ink-secondary)] leading-relaxed">

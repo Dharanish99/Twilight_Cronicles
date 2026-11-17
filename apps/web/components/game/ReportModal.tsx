@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Flag, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useGameStore } from "@/lib/state/gameStore";
@@ -27,39 +27,52 @@ export function ReportModal({ isOpen, questionId, onClose }: ReportModalProps) {
   const { addToast } = useGameStore();
   const [selected, setSelected] = useState<ReportReason | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Reset state when re-opened
-  useEffect(() => {
-    if (isOpen) {
-      setSelected(null);
-      setSubmitted(false);
-    }
-  }, [isOpen, questionId]);
+  const handleClose = useCallback(() => {
+    setSelected(null);
+    setSubmitted(false);
+    setIsSending(false);
+    onClose();
+  }, [onClose]);
 
   // Close on Escape key
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     if (isOpen) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    if (!selected) return;
-    try {
-      getSocket().emit("question:report", { questionId, reason: selected });
-    } catch {
-      // Non-fatal — server logs the report independently
+    if (!selected || !questionId) return;
+    const socket = getSocket();
+    if (!socket.connected) {
+      addToast("Reconnect before sending your report.", "neutral");
+      return;
     }
-    setSubmitted(true);
-    setTimeout(() => {
-      addToast("Thanks — the question has been flagged for review.", "success");
-      onClose();
-    }, 1200);
+
+    setIsSending(true);
+    const onReceived = () => {
+      window.clearTimeout(timeout);
+      setIsSending(false);
+      setSubmitted(true);
+      window.setTimeout(() => {
+        addToast("Thanks — your report was received.", "success");
+        handleClose();
+      }, 1200);
+    };
+    const timeout = window.setTimeout(() => {
+      socket.off("question:report_received", onReceived);
+      setIsSending(false);
+      addToast("We couldn't confirm the report. Please try again.", "neutral");
+    }, 10000);
+    socket.once("question:report_received", onReceived);
+    socket.emit("question:report", { questionId, reason: selected });
   };
 
   return (
@@ -68,7 +81,7 @@ export function ReportModal({ isOpen, questionId, onClose }: ReportModalProps) {
       <div
         ref={overlayRef}
         className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
-        onClick={(e) => e.target === overlayRef.current && onClose()}
+        onClick={(e) => e.target === overlayRef.current && handleClose()}
         role="dialog"
         aria-modal="true"
         aria-label="Report this question"
@@ -83,12 +96,12 @@ export function ReportModal({ isOpen, questionId, onClose }: ReportModalProps) {
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--ink-primary)] text-sm">Flag Question</h2>
-                <p className="text-[11px] text-[var(--ink-tertiary)]">Your report is anonymous</p>
+                <p className="text-[11px] text-[var(--ink-tertiary)]">Your partner won’t see this report</p>
               </div>
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--ink-tertiary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-sunken)] transition-colors"
               aria-label="Close"
             >
@@ -125,6 +138,7 @@ export function ReportModal({ isOpen, questionId, onClose }: ReportModalProps) {
                 variant="secondary"
                 size="md"
                 disabled={!selected}
+                loading={isSending}
                 onClick={handleSubmit}
                 id="report-modal-submit-btn"
                 className="w-full"

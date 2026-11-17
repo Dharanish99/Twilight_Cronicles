@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { CategoryId, TurnPhase } from "@twilight/shared-types";
 import { getCategoryColor } from "@/lib/theme/categories";
@@ -62,36 +62,26 @@ export function WaitingScreen({
   const reduced = useReducedMotion();
   const pulseProps = lobbyPulse(reduced);
 
-  // Pick loading copy once per question_loading mount — stable for the full beat
-  const loadingCopyRef = useRef<string>(pickCopy(CHOOSING_QUESTION_COPY));
-  useEffect(() => {
-    if (phase === "question_loading") {
-      loadingCopyRef.current = pickCopy(CHOOSING_QUESTION_COPY);
-    }
-  }, [phase, questionKey]);
+  const [loadingCopy] = useState(() => pickCopy(CHOOSING_QUESTION_COPY));
 
   // ── Elapsed timer for time-tiered answering copy ──────────────────────────
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerKey = `${phase}:${questionKey ?? ""}`;
+  const [elapsedState, setElapsedState] = useState({ timerKey, seconds: 0 });
+  const elapsedSeconds = elapsedState.timerKey === timerKey ? elapsedState.seconds : 0;
 
   useEffect(() => {
-    // Reset timer whenever question or phase changes
-    setElapsedSeconds(0);
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    if (phase === "answering") {
-      timerRef.current = setInterval(() => {
-        setElapsedSeconds((s) => s + 1);
-      }, 1000);
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [phase, questionKey]);
+    if (phase !== "answering") return;
+    const interval = window.setInterval(() => {
+      setElapsedState((previous) => ({
+        timerKey,
+        seconds: previous.timerKey === timerKey ? previous.seconds + 1 : 1,
+      }));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [phase, timerKey]);
 
   // ── Derive copy ───────────────────────────────────────────────────────────
-  const staticCopy = getStaticCopy(phase, partnerName, loadingCopyRef.current, customMessage);
+  const staticCopy = getStaticCopy(phase, partnerName, loadingCopy, customMessage);
   const copy =
     phase === "answering"
       ? getTimedCopy(elapsedSeconds, partnerName)

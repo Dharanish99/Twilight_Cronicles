@@ -11,12 +11,11 @@
  * a right-side panel on wider screens.
  */
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DoodleEntry } from "@twilight/shared-types";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
-import { Sigil } from "@/components/ui/Sigil";
-import type { AvatarId } from "@twilight/shared-types";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 
 // 5 brand-color drawing swatches
@@ -46,10 +45,6 @@ interface DoodlePanelProps {
   myPlayerId: string;
   /** Partner's display name (for send button copy) */
   partnerName: string;
-  /** Partner's avatar ID — for their sigil in the feed */
-  partnerAvatarId: AvatarId;
-  /** My avatar ID — for my sigil in the feed */
-  myAvatarId: AvatarId;
   onSendDoodle: (dataUrl: string, round: number) => void;
   onReact: (doodleId: string, emoji: string) => void;
 }
@@ -88,9 +83,12 @@ function DoodleFeedItem({
           }`}
         style={{ boxShadow: "var(--shadow-sm)" }}
       >
-        <img
+        <Image
           src={entry.dataUrl}
           alt={`Doodle from ${entry.senderName}`}
+          width={640}
+          height={260}
+          unoptimized
           className="w-full max-h-52 object-contain block"
           style={{ background: "#ffffff" }}
         />
@@ -150,14 +148,6 @@ function DoodleCanvas({
   const [sent, setSent]        = useState(false);
   const isDrawing              = useRef(false);
   const currentStroke          = useRef<{ x: number; y: number }[]>([]);
-
-  // Reset on new round
-  useEffect(() => {
-    setStrokes([]);
-    setSent(false);
-    const ctx = canvasRef.current?.getContext("2d");
-    if (ctx) ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
-  }, [currentRound]);
 
   function getPos(e: React.PointerEvent<HTMLCanvasElement>) {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -347,8 +337,6 @@ export function DoodlePanel({
   gallery,
   myPlayerId,
   partnerName,
-  partnerAvatarId,
-  myAvatarId,
   onSendDoodle,
   onReact,
 }: DoodlePanelProps) {
@@ -442,6 +430,7 @@ export function DoodlePanel({
             {/* Canvas — waiting player only */}
             {isWaiting && (
               <DoodleCanvas
+                key={currentRound}
                 currentRound={currentRound}
                 partnerName={partnerName}
                 onSend={onSendDoodle}

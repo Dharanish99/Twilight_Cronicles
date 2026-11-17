@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: "Do I need an account?",
-    a: "No. You can create and join games as a guest with just a display name. Accounts are optional and only needed if you want to save highlights or session history across devices.",
+    a: "No. You can create and join as a guest with a display name and avatar. The name and avatar are visible to the other player. The app does not currently offer accounts or saved highlights.",
   },
   {
     q: "Is it free?",
@@ -16,11 +16,11 @@ const FAQS = [
   },
   {
     q: "Can someone else see my answer before I share it?",
-    a: "No. Your draft answer never leaves your device until you tap \"Lock it in\", and it never reaches the other player until you explicitly tap \"Share\". This is enforced at the server level — it is not a client-side trick.",
+    a: "Your draft is sent to the realtime service so it can be restored after a connection drop, but it is not sent to the other player until you choose to share it. Drafts are not end-to-end encrypted.",
   },
   {
     q: "What happens to my answers after the session?",
-    a: "All session content (questions, answers, drafts) is held ephemerally and automatically discarded within 24 hours of the session ending. Nothing is stored in a database unless you explicitly choose to save a Highlight.",
+    a: "Room state, including the current answer draft, is kept in Redis for the game and expires after 24 hours without activity. Answers are not saved to a personal history in this version.",
   },
   {
     q: "Can I play on mobile?",
@@ -28,11 +28,11 @@ const FAQS = [
   },
   {
     q: "What if my connection drops mid-game?",
-    a: "The game handles disconnects gracefully. If you lose connection, the other player sees a subtle reconnection notice. When you reconnect, the game resumes exactly where you left off — same question, same draft state.",
+    a: "The other player sees a reconnecting notice. When you return in the same browser tab, the game restores the current phase and, for the answerer, the current question and last synced draft.",
   },
   {
     q: "How many questions are there?",
-    a: "Over 120 curated questions across 10 categories, with more added regularly. The question engine ensures you do not see repeats within a session.",
+    a: "120 curated questions across 10 categories. The question engine avoids repeats within a room until its category pool is exhausted.",
   },
   {
     q: "Can I skip a question?",

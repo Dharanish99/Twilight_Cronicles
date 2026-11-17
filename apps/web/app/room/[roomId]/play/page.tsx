@@ -39,10 +39,11 @@ export default function PlayPage({ params }: PlayPageProps) {
     selectCategory,
     sendDraftUpdate,
     lockAnswer,
+    unlockAnswer,
     shareAnswer,
     skipQuestion,
     sendReaction,
-    joinRoom,
+    resumeRoom,
     initSocketListeners,
     toasts,
     removeToast,
@@ -52,7 +53,6 @@ export default function PlayPage({ params }: PlayPageProps) {
     sendDoodle,
     sendDoodleReaction,
     partnerLeft,
-    setPartnerLeft,
   } = useGameStore();
 
   const [activeReactionPopups, setActiveReactionPopups] = useState<
@@ -76,10 +76,20 @@ export default function PlayPage({ params }: PlayPageProps) {
 
   // Re-join room if we landed here without state (e.g. page refresh)
   useEffect(() => {
-    if (!room && roomId && localPlayer) {
-      joinRoom(localPlayer.displayName, localPlayer.avatar, roomId);
+    if (!room && localPlayer?.sessionToken && localPlayer.roomId === roomId) {
+      resumeRoom();
     }
-  }, [roomId, room, localPlayer, joinRoom]);
+  }, [roomId, room, localPlayer, resumeRoom]);
+
+  useEffect(() => {
+    if (
+      connectionStatus === "connected" &&
+      room === null &&
+      (!localPlayer?.sessionToken || localPlayer.roomId !== roomId)
+    ) {
+      router.replace(`/join?code=${encodeURIComponent(roomId)}`);
+    }
+  }, [connectionStatus, localPlayer, room, roomId, router]);
 
   // If room is waiting or partner missing, go back to lobby
   useEffect(() => {
@@ -105,13 +115,10 @@ export default function PlayPage({ params }: PlayPageProps) {
     prevGalleryLen.current = doodleGallery.length;
   }, [doodleGallery.length, isDoodlePanelOpen]);
 
-  // Clear unread when panel opens
-  useEffect(() => {
-    if (isDoodlePanelOpen) setUnreadDoodles(0);
-  }, [isDoodlePanelOpen]);
-
   // Reset overlay-dismissed when partner reconnects
   useEffect(() => {
+    // The room store clears this value only after a reconnect event.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!partnerLeft) setOverlayDismissed(false);
   }, [partnerLeft]);
 
@@ -132,12 +139,28 @@ export default function PlayPage({ params }: PlayPageProps) {
   const totalRounds  = room?.settings?.rounds ?? 6;
   const phase        = turn?.phase ?? "choosing_category";
   const chosenCategory = turn?.chosenCategory ?? currentQuestion?.category;
+  const reportableQuestionId = currentQuestion?.questionId ?? sharedAnswer?.questionId ?? "";
 
   const isPicker   = !!(myServerId && turn?.pickerPlayerId === myServerId);
   const isAnswerer = !!(myServerId && turn?.answererPlayerId === myServerId);
   const isTosser   = !!(myServerId && turn?.tosserPlayerId === myServerId);
   // Waiting = not the answerer (during active question phases)
   const isWaiting  = !isAnswerer && (phase === "answering" || phase === "locked");
+
+  const [clockNow, setClockNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!turn?.answerDeadlineAt) return;
+    const tick = () => setClockNow(Date.now());
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [turn?.answerDeadlineAt]);
+  const answerTimer = turn?.answerDeadlineAt && room?.settings.timerSeconds
+    ? {
+        total: room.settings.timerSeconds,
+        secondsRemaining: Math.max(0, Math.ceil((Date.parse(turn.answerDeadlineAt) - clockNow) / 1000)),
+      }
+    : null;
 
   const getRoleDescription = () => {
     if (phase === "coin_toss_waiting" || phase === "coin_toss_flipping") return "🪙 Coin toss";
@@ -172,6 +195,10 @@ export default function PlayPage({ params }: PlayPageProps) {
     sendDoodleReaction(doodleId, emoji);
   }, [sendDoodleReaction]);
 
+  const handleQuoteShown = useCallback((id: string) => {
+    setUsedQuoteIds((previous) => previous.has(id) ? previous : new Set(previous).add(id));
+  }, []);
+
   // Show partner-left overlay
   const showPartnerLeft = !!partnerLeft && !overlayDismissed;
 
@@ -184,7 +211,7 @@ export default function PlayPage({ params }: PlayPageProps) {
         isPicker, isAnswerer, phase: turn.phase,
       });
     }
-  }, [turn?.phase, turn?.pickerPlayerId, turn?.answererPlayerId, isPicker, isAnswerer, myPlayer]);
+  }, [turn, isPicker, isAnswerer, phase, myPlayer]);
 
   return (
     <div className="min-h-screen bg-surface-base text-ink-primary flex flex-col justify-between p-5 sm:p-8 relative overflow-hidden">
@@ -201,7 +228,6 @@ export default function PlayPage({ params }: PlayPageProps) {
       {showPartnerLeft && partnerLeft && (
         <PlayerLeftOverlay
           partnerName={partnerLeft.displayName}
-          roomId={roomId}
           onDismiss={() => setOverlayDismissed(true)}
         />
       )}
@@ -215,8 +241,6 @@ export default function PlayPage({ params }: PlayPageProps) {
         gallery={doodleGallery}
         myPlayerId={myServerId ?? ""}
         partnerName={partnerName}
-        partnerAvatarId={(partner?.avatar ?? "dusk") as any}
-        myAvatarId={(myPlayer?.avatar ?? "ember") as any}
         onSendDoodle={handleSendDoodle}
         onReact={handleDoodleReact}
       />
@@ -235,7 +259,8 @@ export default function PlayPage({ params }: PlayPageProps) {
             <button
               type="button"
               onClick={() => setIsReportModalOpen(true)}
-              className="p-2 rounded-full hover:bg-surface-sunken transition-colors text-ink-tertiary hover:text-[var(--danger)]"
+              disabled={!reportableQuestionId}
+              className="p-2 rounded-full hover:bg-surface-sunken transition-colors text-ink-tertiary hover:text-[var(--danger)] disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Report Question"
               id="report-question-btn"
             >
@@ -261,7 +286,10 @@ export default function PlayPage({ params }: PlayPageProps) {
 
             {/* Doodle gallery button — below progress bar, top-right */}
             <button
-              onClick={() => setIsDoodlePanelOpen(true)}
+              onClick={() => {
+                setUnreadDoodles(0);
+                setIsDoodlePanelOpen(true);
+              }}
               className="relative flex items-center gap-1.5 text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink-secondary)] transition-colors px-2 py-1 rounded-full hover:bg-[var(--bg-sunken)]"
               aria-label={`Open doodle gallery${unreadDoodles > 0 ? `, ${unreadDoodles} new` : ""}`}
               id="doodle-gallery-btn"
@@ -277,6 +305,14 @@ export default function PlayPage({ params }: PlayPageProps) {
           </div>
         </div>
       </header>
+
+      {connectionStatus !== "connected" && (
+        <div className="max-w-2xl mx-auto w-full mt-3 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--accent-ember-tint)] text-sm text-[var(--ink-primary)]" role="status" aria-live="polite">
+          {connectionStatus === "reconnecting"
+            ? "Reconnecting… your current answer stays on this device until it syncs."
+            : "You’re offline. Keep this page open while the connection returns."}
+        </div>
+      )}
 
       {/* Main Interactive Stage */}
       <main className="max-w-2xl mx-auto w-full my-auto py-8">
@@ -330,20 +366,19 @@ export default function PlayPage({ params }: PlayPageProps) {
           <>
             {isAnswerer ? (
               <QuestionCard
-                round={round}
-                totalRounds={totalRounds}
                 category={currentQuestion?.category ?? chosenCategory ?? "deep"}
                 question={currentQuestion?.text ?? "Loading question..."}
-                intensity={(currentQuestion as any)?.intensity ?? 3}
+                intensity={currentQuestion?.intensity ?? 3}
                 state={isDraftLocked ? "locked" : "typing"}
                 draft={draftText}
                 onDraftChange={sendDraftUpdate}
                 onLock={lockAnswer}
                 onShare={() => shareAnswer()}
                 onSkip={skipQuestion}
-                onUnlockEdit={() => lockAnswer()}
+                onUnlockEdit={unlockAnswer}
                 partnerName={partnerName}
                 followUpPrompt={currentQuestion?.followUpPrompt}
+                timer={answerTimer}
               />
             ) : (
               <WaitingScreen
@@ -368,7 +403,7 @@ export default function PlayPage({ params }: PlayPageProps) {
                 answer={sharedAnswer.answerText}
                 answeredBy={{
                   name: sharedAnswer.answeredBy.name,
-                  avatar: sharedAnswer.answeredBy.avatar as any,
+                  avatar: sharedAnswer.answeredBy.avatar,
                 }}
                 onReact={handleReact}
                 onContinue={handleContinueAfterReveal}
@@ -378,7 +413,7 @@ export default function PlayPage({ params }: PlayPageProps) {
                 partnerName={partnerName}
                 category={sharedAnswer.category}
                 usedQuoteIds={usedQuoteIds}
-                onQuoteShown={(id) => setUsedQuoteIds((prev) => new Set(prev).add(id))}
+                onQuoteShown={handleQuoteShown}
               />
             )}
           </>
@@ -388,7 +423,10 @@ export default function PlayPage({ params }: PlayPageProps) {
       {/* Floating Doodle FAB — only for waiting player during active question */}
       {isWaiting && (
         <button
-          onClick={() => setIsDoodlePanelOpen(true)}
+          onClick={() => {
+            setUnreadDoodles(0);
+            setIsDoodlePanelOpen(true);
+          }}
           className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-[var(--accent-ember)] text-white rounded-full shadow-[0_4px_20px_rgba(225,89,42,0.4)] flex items-center justify-center hover:shadow-[0_6px_28px_rgba(225,89,42,0.55)] active:scale-95 transition-all"
           aria-label="Open doodle canvas"
           id="doodle-fab"
@@ -405,8 +443,9 @@ export default function PlayPage({ params }: PlayPageProps) {
 
       {/* In-session Report Modal */}
       <ReportModal
+        key={reportableQuestionId}
         isOpen={isReportModalOpen}
-        questionId={currentQuestion?.questionId ?? ""}
+        questionId={reportableQuestionId}
         onClose={() => setIsReportModalOpen(false)}
       />
     </div>

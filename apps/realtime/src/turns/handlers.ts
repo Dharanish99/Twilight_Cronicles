@@ -1,391 +1,463 @@
 import type { Server, Socket } from "socket.io";
 import type {
-  ServerToClientEvents,
+  CategoryId,
   ClientToServerEvents,
+  DoodleEntry,
   InterServerEvents,
-  SocketData,
-  RoomState,
   ReactionId,
+  RoomState,
+  ServerToClientEvents,
+  SocketData,
 } from "@twilight/shared-types";
+import { CATEGORY_IDS } from "@twilight/shared-types";
 import {
-  setJson,
-  getJson,
+  consumeRateLimit,
   deleteKey,
+  getJson,
   keys,
-  redisClient,
   ROOM_TTL_SECONDS,
+  setJson,
   TURN_DRAFT_TTL_SECONDS,
+  withRoomLock,
 } from "../redis/client";
+import { loadRoom, playerChannel, saveRoom, touchRoom } from "../rooms/state";
 import { selectQuestion, type SeedQuestion } from "../questions/select";
+import { scheduleCoinTossAdvance } from "./schedule";
 
 type AppServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+const TRUST_PROXY = process.env.TRUST_PROXY === "true";
+
+function clientAddress(socket: AppSocket): string {
+  if (TRUST_PROXY) {
+    const forwarded = socket.handshake.headers["x-forwarded-for"];
+    const firstAddress = (Array.isArray(forwarded) ? forwarded[0] : forwarded)
+      ?.split(",")[0]
+      ?.trim();
+    if (firstAddress) return firstAddress;
+  }
+  return socket.handshake.address || "unknown";
+}
+
+const CATEGORIES = new Set<CategoryId>(CATEGORY_IDS);
+const REACTIONS = new Set<ReactionId>(["heart", "spark", "soft", "same", "surprising"]);
+const REPORT_REASONS = new Set([
+  "offensive", "too_personal", "repetitive", "poorly_written", "wrong_category", "other",
+]);
+const DOODLE_REACTIONS = new Set(["❤️", "✨", "🥺", "💯", "😮", "👍", "😂"]);
+
+function questionPayload(question: SeedQuestion) {
+  return {
+    questionId: question.id,
+    text: question.text,
+    category: question.category as CategoryId,
+    intensity: question.intensity,
+    followUpPrompt: question.followUpPrompt ?? null,
+    estimatedAnswerSeconds: question.estimatedAnswerSeconds,
+  };
+}
+
+function setAnswerDeadline(room: RoomState): void {
+  room.turn.answerDeadlineAt = room.settings.timerSeconds
+    ? new Date(Date.now() + room.settings.timerSeconds * 1000).toISOString()
+    : null;
+}
+
+function isParticipant(room: RoomState, playerId: string): boolean {
+  return room.players.some((player) => player?.id === playerId);
+}
+
+function isDoodleDataUrl(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value) &&
+    value.length <= 80_000;
+}
 
 export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
-  // turn:select_category (Executed by the Picker for the Answerer)
-  socket.on("turn:select_category", async ({ category }) => {
+  socket.on("turn:select_category", async (payload) => {
+    const category = payload?.category;
     const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
+    if (!roomId || !playerId || !category || !CATEGORIES.has(category)) return;
 
     try {
-      const roomState = await getJson<RoomState>(keys.room(roomId));
-      if (!roomState) return;
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (
+          !room || room.status !== "active" || room.turn.phase !== "choosing_category" ||
+          room.turn.pickerPlayerId !== playerId || !room.settings.categories.includes(category)
+        ) return;
 
-      const { turn, settings, players } = roomState;
-      // Must be the assigned picker
-      if (turn.pickerPlayerId !== playerId) return;
+        room.turn.phase = "question_loading";
+        room.turn.chosenCategory = category;
+        await saveRoom(room);
+        io.to(roomId).emit("turn:category_selected", { category });
+        io.to(roomId).emit("turn:phase_update", { phase: "question_loading", chosenCategory: category });
 
-      turn.phase = "question_loading";
-      turn.chosenCategory = category;
-      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-      io.to(roomId).emit("turn:category_selected", { category });
-
-      // Select question for the Answerer
-      const question = await selectQuestion({
-        category,
-        round: turn.round,
-        settings,
-        sessionId: roomId,
-        skipsThisTurn: turn.skipsThisTurn,
-      });
-
-      if (!question) {
-        socket.emit("error:generic", { reason: "No questions available in this category." });
-        return;
-      }
-
-      await setJson(keys.turnQuestion(roomId), question, TURN_DRAFT_TTL_SECONDS);
-
-      // Now set phase to answering for the Answerer
-      turn.phase = "answering";
-      turn.activePlayerId = turn.answererPlayerId;
-      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-      // Deliver question strictly to the Answerer's socket(s)
-      const answererSocket = Array.from(io.sockets.sockets.values()).find(
-        (s) => s.data.playerId === turn.answererPlayerId && s.data.roomId === roomId
-      );
-
-      const questionPayload = {
-        questionId: question.id,
-        text: question.text,
-        category: question.category as any,
-        intensity: question.intensity,
-        followUpPrompt: question.followUpPrompt,
-        estimatedAnswerSeconds: question.estimatedAnswerSeconds,
-      };
-
-      if (answererSocket) {
-        answererSocket.emit("turn:question_ready", questionPayload);
-      } else {
-        // Fallback: if answerer reconnected on same socket, broadcast payload to them
-        io.to(roomId).emit("turn:question_ready", questionPayload);
-      }
-
-      // Notify the room (and picker) of phase update without revealing question text
-      socket.emit("turn:phase_update", {
-        phase: "answering",
-        chosenCategory: category,
-      });
-      socket.to(roomId).emit("turn:phase_update", {
-        phase: "answering",
-        chosenCategory: category,
-      });
-    } catch (err: any) {
-      console.error("[turn:select_category] Error:", err);
-    }
-  });
-
-  // turn:answer_draft (Sent by Answerer)
-  socket.on("turn:answer_draft", async ({ text }) => {
-    const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-
-    try {
-      await setJson(keys.turnDraft(roomId), { text, playerId }, TURN_DRAFT_TTL_SECONDS);
-    } catch (err: any) {
-      console.error("[turn:answer_draft] Error:", err);
-    }
-  });
-
-  // turn:answer_lock (Sent by Answerer)
-  socket.on("turn:answer_lock", async () => {
-    const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-
-    try {
-      const roomState = await getJson<RoomState>(keys.room(roomId));
-      if (!roomState) return;
-
-      roomState.turn.phase = "locked";
-      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-      socket.emit("turn:answer_locked");
-      socket.to(roomId).emit("turn:phase_update", { phase: "locked" });
-    } catch (err: any) {
-      console.error("[turn:answer_lock] Error:", err);
-    }
-  });
-
-  // turn:answer_share
-  socket.on("turn:answer_share", async () => {
-    const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-
-    try {
-      const roomState = await getJson<RoomState>(keys.room(roomId));
-      if (!roomState) return;
-
-      const question = await getJson<SeedQuestion>(keys.turnQuestion(roomId));
-      const draft = await getJson<{ text: string; playerId: string }>(keys.turnDraft(roomId));
-
-      if (roomState.turn.phase === "shared") {
-        // Continue clicked -> next question via coin toss!
-        const p1 = roomState.players[0];
-        const p2 = roomState.players[1];
-        if (!p2) return;
-
-        // Each question = 1 round. Increment after every question.
-        const nextRound = roomState.turn.round + 1;
-
-        if (nextRound > roomState.settings.rounds) {
-          roomState.status = "completed";
-          roomState.sessionCount = (roomState.sessionCount ?? 0) + 1;
-          await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-          io.to(roomId).emit("game:completed", {
-            roundsCompleted: roomState.settings.rounds,
-            categoriesUsed: roomState.settings.categories,
-            durationSeconds: 1200,
+        const hostRelationship = room.players[0]?.relationshipTypeShared;
+        let question: SeedQuestion | null;
+        try {
+          question = await selectQuestion({
+            category,
+            round: room.turn.round,
+            settings: room.settings,
+            sessionId: roomId,
+            skipsThisTurn: room.turn.skipsThisTurn,
+            relationshipType: hostRelationship,
           });
+        } catch (error) {
+          room.turn.phase = "choosing_category";
+          room.turn.chosenCategory = undefined;
+          await saveRoom(room);
+          io.to(roomId).emit("room:state_snapshot", room);
+          throw error;
+        }
+
+        if (!question) {
+          room.turn.phase = "choosing_category";
+          room.turn.chosenCategory = undefined;
+          await saveRoom(room);
+          io.to(roomId).emit("room:state_snapshot", room);
+          socket.emit("error:generic", { reason: "No questions are available for that mood right now." });
           return;
         }
 
-        // Alternate who gets to toss the coin each round
-        const previousTosser = roomState.turn.tosserPlayerId;
-        const nextTosser = previousTosser === p1.id ? p2.id : p1.id;
+        await setJson(keys.turnQuestion(roomId), question, TURN_DRAFT_TTL_SECONDS);
+        await deleteKey(keys.turnDraft(roomId));
+        room.turn.phase = "answering";
+        room.turn.activePlayerId = room.turn.answererPlayerId;
+        room.sharedAnswer = null;
+        room.usedCategories = Array.from(new Set([...(room.usedCategories ?? []), category]));
+        setAnswerDeadline(room);
+        await saveRoom(room);
 
-        roomState.turn = {
-          activePlayerId: nextTosser,
-          pickerPlayerId: "",
-          answererPlayerId: "",
-          tosserPlayerId: nextTosser,
-          round: nextRound,
-          phase: "coin_toss_waiting",
-          skipsThisTurn: 0,
-        };
-
-        await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-        io.to(roomId).emit("turn:completed", {
-          round: nextRound,
-          nextActivePlayerId: nextTosser,
-        });
-        io.to(roomId).emit("room:state_snapshot", roomState);
-        console.log(`[turn:completed] Question ${nextRound}/${roomState.settings.rounds}. Next tosser: ${nextTosser}`);
-        return;
-      }
-
-      if (!question) return;
-
-      const answerer = roomState.players.find((p) => p && p.id === playerId);
-      const answerText = draft?.text ?? "(No written response)";
-
-      roomState.turn.phase = "shared";
-      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-      io.to(roomId).emit("turn:answer_shared", {
-        questionId: question.id,
-        text: question.text,
-        category: question.category as any,
-        answerText,
-        answeredBy: {
-          id: playerId,
-          name: answerer?.displayName ?? "Partner",
-          avatar: (answerer?.avatar as string) ?? "ember",
-        },
+        io.to(roomId).emit("turn:phase_update", { phase: "answering", chosenCategory: category });
+        io.to(roomId).emit("room:state_snapshot", room);
+        io.to(playerChannel(roomId, room.turn.answererPlayerId)).emit("turn:question_ready", questionPayload(question));
       });
-
-      io.to(roomId).emit("room:state_snapshot", roomState);
-    } catch (err: any) {
-      console.error("[turn:answer_share] Error:", err);
+    } catch (error) {
+      console.error("[turn:select_category] Failed:", error);
+      socket.emit("error:generic", { reason: "We couldn't load the next question. Please try again." });
     }
   });
 
-  // turn:skip
+  socket.on("turn:answer_draft", async (payload) => {
+    const text = payload?.text;
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId || typeof text !== "string" || text.length > 3000) return;
+    try {
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (!room || room.status !== "active" || room.turn.answererPlayerId !== playerId || room.turn.phase !== "answering") return;
+        await setJson(keys.turnDraft(roomId), { text, playerId }, TURN_DRAFT_TTL_SECONDS);
+        await touchRoom(room);
+      });
+    } catch (error) {
+      console.error("[turn:answer_draft] Failed:", error);
+      socket.emit("error:generic", { reason: "Your draft couldn't sync. Check your connection and try again." });
+    }
+  });
+
+  socket.on("turn:answer_lock", async () => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+    try {
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (!room || room.status !== "active" || room.turn.answererPlayerId !== playerId || room.turn.phase !== "answering") return;
+        const draft = await getJson<{ text: string; playerId: string }>(keys.turnDraft(roomId));
+        if (draft?.playerId !== playerId || !draft.text.trim()) {
+          socket.emit("error:generic", { reason: "Write an answer before locking it in." });
+          return;
+        }
+        room.turn.phase = "locked";
+        await saveRoom(room);
+        io.to(playerChannel(roomId, playerId)).emit("turn:answer_locked");
+        io.to(roomId).emit("turn:phase_update", { phase: "locked" });
+        io.to(roomId).emit("room:state_snapshot", room);
+      });
+    } catch (error) {
+      console.error("[turn:answer_lock] Failed:", error);
+      socket.emit("error:generic", { reason: "We couldn't lock your answer. Please try again." });
+    }
+  });
+
+  socket.on("turn:answer_unlock", async () => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+    try {
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (!room || room.status !== "active" || room.turn.answererPlayerId !== playerId || room.turn.phase !== "locked") return;
+        room.turn.phase = "answering";
+        await saveRoom(room);
+        io.to(roomId).emit("turn:phase_update", { phase: "answering" });
+        io.to(roomId).emit("room:state_snapshot", room);
+      });
+    } catch (error) {
+      console.error("[turn:answer_unlock] Failed:", error);
+      socket.emit("error:generic", { reason: "We couldn't reopen your answer. Please try again." });
+    }
+  });
+
+  socket.on("turn:answer_share", async () => {
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId) return;
+    try {
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (!room || room.status !== "active" || !isParticipant(room, playerId)) return;
+
+        if (room.turn.phase === "shared") {
+          if (room.turn.pickerPlayerId !== playerId) return;
+          const nextRound = room.turn.round + 1;
+          if (nextRound > room.settings.rounds) {
+            room.status = "completed";
+            room.sessionCount = (room.sessionCount ?? 0) + 1;
+            room.completedAt = new Date().toISOString();
+            room.turn.answerDeadlineAt = null;
+            await saveRoom(room);
+            const startedAt = room.startedAt ? Date.parse(room.startedAt) : Date.now();
+            io.to(roomId).emit("game:completed", {
+              roundsCompleted: room.turn.round,
+              categoriesUsed: room.usedCategories ?? [],
+              durationSeconds: Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
+            });
+            io.to(roomId).emit("room:state_snapshot", room);
+            return;
+          }
+
+          const [p1, p2] = room.players;
+          if (!p1 || !p2) return;
+          const nextTosser = room.turn.tosserPlayerId === p1.id ? p2.id : p1.id;
+          room.sharedAnswer = null;
+          room.turn = {
+            activePlayerId: nextTosser,
+            pickerPlayerId: "",
+            answererPlayerId: "",
+            tosserPlayerId: nextTosser,
+            round: nextRound,
+            phase: "coin_toss_waiting",
+            skipsThisTurn: 0,
+            answerDeadlineAt: null,
+            phaseEndsAt: null,
+          };
+          await deleteKey(keys.turnDraft(roomId));
+          await deleteKey(keys.turnQuestion(roomId));
+          await saveRoom(room);
+          io.to(roomId).emit("turn:completed", { round: nextRound, nextActivePlayerId: nextTosser });
+          io.to(roomId).emit("room:state_snapshot", room);
+          return;
+        }
+
+        if (room.turn.phase !== "locked" || room.turn.answererPlayerId !== playerId) return;
+        const question = await getJson<SeedQuestion>(keys.turnQuestion(roomId));
+        const draft = await getJson<{ text: string; playerId: string }>(keys.turnDraft(roomId));
+        const answerer = room.players.find((player) => player?.id === playerId);
+        if (!question || !draft || draft.playerId !== playerId || !draft.text.trim() || !answerer) return;
+
+        const sharedAnswer = {
+          questionId: question.id,
+          text: question.text,
+          category: question.category as CategoryId,
+          answerText: draft.text,
+          answeredBy: {
+            id: playerId,
+            name: answerer.displayName,
+            avatar: answerer.avatar,
+          },
+        };
+        room.turn.phase = "shared";
+        room.sharedAnswer = sharedAnswer;
+        await saveRoom(room);
+        await deleteKey(keys.turnDraft(roomId));
+        io.to(roomId).emit("turn:answer_shared", sharedAnswer);
+        io.to(roomId).emit("room:state_snapshot", room);
+      });
+    } catch (error) {
+      console.error("[turn:answer_share] Failed:", error);
+      socket.emit("error:generic", { reason: "We couldn't share that answer. Please try again." });
+    }
+  });
+
   socket.on("turn:skip", async () => {
     const { roomId, playerId } = socket.data;
     if (!roomId || !playerId) return;
-
     try {
-      const roomState = await getJson<RoomState>(keys.room(roomId));
-      if (!roomState) return;
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (
+          !room || room.status !== "active" || room.turn.answererPlayerId !== playerId ||
+          room.turn.phase !== "answering" || !room.turn.chosenCategory
+        ) return;
 
-      const { turn, settings } = roomState;
-      if (turn.answererPlayerId !== playerId) return;
+        const skipCount = room.turn.skipsThisTurn + 1;
+        const question = await selectQuestion({
+          category: room.turn.chosenCategory,
+          round: room.turn.round,
+          settings: room.settings,
+          sessionId: roomId,
+          skipsThisTurn: skipCount,
+          relationshipType: room.players[0]?.relationshipTypeShared,
+        });
+        if (!question) return;
 
-      turn.skipsThisTurn = (turn.skipsThisTurn || 0) + 1;
-      const category = turn.chosenCategory ?? "deep";
-
-      const question = await selectQuestion({
-        category,
-        round: turn.round,
-        settings,
-        sessionId: roomId,
-        skipsThisTurn: turn.skipsThisTurn,
+        await setJson(keys.turnQuestion(roomId), question, TURN_DRAFT_TTL_SECONDS);
+        await deleteKey(keys.turnDraft(roomId));
+        room.turn.skipsThisTurn = skipCount;
+        room.sharedAnswer = null;
+        setAnswerDeadline(room);
+        await saveRoom(room);
+        io.to(roomId).emit("room:state_snapshot", room);
+        io.to(playerChannel(roomId, playerId)).emit("turn:question_ready", questionPayload(question));
       });
-
-      if (!question) return;
-
-      await setJson(keys.turnQuestion(roomId), question, TURN_DRAFT_TTL_SECONDS);
-      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-      socket.emit("turn:question_ready", {
-        questionId: question.id,
-        text: question.text,
-        category: question.category as any,
-        intensity: question.intensity,
-        followUpPrompt: question.followUpPrompt,
-        estimatedAnswerSeconds: question.estimatedAnswerSeconds,
-      });
-    } catch (err: any) {
-      console.error("[turn:skip] Error:", err);
+    } catch (error) {
+      console.error("[turn:skip] Failed:", error);
+      socket.emit("error:generic", { reason: "We couldn't skip to another question. Please try again." });
     }
   });
 
-  // reaction:send
-  socket.on("reaction:send", ({ reaction }) => {
-    const { roomId, playerId } = socket.data;
-    if (!roomId) return;
-    io.to(roomId).emit("reaction:received", { from: playerId, reaction: reaction as ReactionId });
-  });
-
-  // turn:flip_coin (Sent by tosser)
   socket.on("turn:flip_coin", async () => {
     const { roomId, playerId } = socket.data;
     if (!roomId || !playerId) return;
-
     try {
-      const roomState = await getJson<RoomState>(keys.room(roomId));
-      if (!roomState) return;
-
-      const { turn, players } = roomState;
-      // Must be the assigned tosser and in the right phase
-      if (turn.phase !== "coin_toss_waiting" || turn.tosserPlayerId !== playerId) return;
-
-      const p1 = players[0];
-      const p2 = players[1];
-      if (!p1 || !p2) return;
-
-      // Determine winner randomly
-      const tossWinner = Math.random() < 0.5 ? p1 : p2;
-      const tossLoser = tossWinner.id === p1.id ? p2 : p1;
-
-      turn.phase = "coin_toss_flipping";
-      turn.tossWinnerId = tossWinner.id;
-      turn.pickerPlayerId = tossWinner.id;
-      turn.answererPlayerId = tossLoser.id;
-      turn.activePlayerId = tossWinner.id;
-
-      await setJson(keys.room(roomId), roomState, ROOM_TTL_SECONDS);
-
-      // Broadcast phase update and full snapshot
-      io.to(roomId).emit("turn:phase_update", { phase: "coin_toss_flipping" });
-      io.to(roomId).emit("room:state_snapshot", roomState);
-
-      // Auto-advance to choosing category after animation (4.5s)
-      setTimeout(async () => {
-        const latestRoom = await getJson<RoomState>(keys.room(roomId));
-        if (latestRoom && latestRoom.turn.phase === "coin_toss_flipping") {
-          latestRoom.turn.phase = "choosing_category";
-          await setJson(keys.room(roomId), latestRoom, ROOM_TTL_SECONDS);
-          io.to(roomId).emit("turn:phase_update", { phase: "choosing_category" });
-          io.to(roomId).emit("room:state_snapshot", latestRoom);
-          console.log(`[turn:flip_coin] Finished. ${tossWinner.displayName} is now picking category.`);
+      let transitionDelay = 0;
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (
+          !room || room.status !== "active" || room.turn.phase !== "coin_toss_waiting" ||
+          room.turn.tosserPlayerId !== playerId
+        ) return;
+        const [p1, p2] = room.players;
+        if (!p1 || !p2 || p1.connection !== "connected" || p2.connection !== "connected") {
+          socket.emit("error:generic", { reason: "Both players need to be connected for the coin toss." });
+          return;
         }
-      }, 4500);
 
-    } catch (err: any) {
-      console.error("[turn:flip_coin] Error:", err);
+        const winner = Math.random() < 0.5 ? p1 : p2;
+        const loser = winner.id === p1.id ? p2 : p1;
+        transitionDelay = 4500;
+        room.turn.phase = "coin_toss_flipping";
+        room.turn.phaseEndsAt = new Date(Date.now() + transitionDelay).toISOString();
+        room.turn.tossWinnerId = winner.id;
+        room.turn.pickerPlayerId = winner.id;
+        room.turn.answererPlayerId = loser.id;
+        room.turn.activePlayerId = winner.id;
+        await saveRoom(room);
+        io.to(roomId).emit("turn:phase_update", { phase: "coin_toss_flipping" });
+        io.to(roomId).emit("room:state_snapshot", room);
+      });
+      if (transitionDelay) scheduleCoinTossAdvance(io, roomId, transitionDelay);
+    } catch (error) {
+      console.error("[turn:flip_coin] Failed:", error);
+      socket.emit("error:generic", { reason: "We couldn't flip the coin. Please try again." });
     }
   });
 
-  // question:report — in-session flag; logs report and confirms without interrupting turn
-  socket.on("question:report", async ({ questionId, reason }) => {
+  socket.on("reaction:send", async (payload) => {
+    const reaction = payload?.reaction;
     const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-    const entry = { questionId, reason, playerId, roomId, ts: new Date().toISOString() };
-    console.warn("[question:report]", JSON.stringify(entry));
+    if (!roomId || !playerId || !reaction || !REACTIONS.has(reaction)) return;
+    const room = await loadRoom(roomId).catch(() => null);
+    if (!room || room.turn.phase !== "shared" || !isParticipant(room, playerId)) return;
+    io.to(roomId).emit("reaction:received", { from: playerId, reaction });
+  });
+
+  socket.on("question:report", async (payload) => {
+    const questionId = payload?.questionId;
+    const reason = payload?.reason;
+    const { roomId, playerId } = socket.data;
+    if (!roomId || !playerId || typeof questionId !== "string" || questionId.length > 80 || typeof reason !== "string" || !REPORT_REASONS.has(reason)) return;
     try {
-      if (redisClient.status === "ready") {
-        await redisClient.rpush("question:reports", JSON.stringify(entry));
+      if (!await consumeRateLimit(clientAddress(socket), "report", 8, 60)) {
+        socket.emit("error:generic", { reason: "Too many reports were sent. Please wait a minute." });
+        return;
       }
-    } catch {
-      // Non-fatal — report is already logged to console
+      const room = await loadRoom(roomId);
+      const question = room ? await getJson<SeedQuestion>(keys.turnQuestion(roomId)) : null;
+      const isCurrentQuestion = question?.id === questionId || room?.sharedAnswer?.questionId === questionId;
+      if (!room || !isParticipant(room, playerId) || !isCurrentQuestion) return;
+      await withRoomLock("question-reports", async () => {
+        const reports = (await getJson<Array<Record<string, string>>>(keys.questionReports)) ?? [];
+        const now = Date.now();
+        const retentionCutoff = now - 90 * 24 * 60 * 60 * 1000;
+        const recentReports = reports.filter((report) => {
+          const submittedAt = Date.parse(report.submittedAt ?? "");
+          return Number.isFinite(submittedAt) && submittedAt >= retentionCutoff;
+        });
+        recentReports.push({ questionId, reason, roomId, submittedAt: new Date(now).toISOString() });
+        if (recentReports.length > 500) recentReports.splice(0, recentReports.length - 500);
+        await setJson(keys.questionReports, recentReports, 90 * 24 * 60 * 60);
+      });
+      socket.emit("question:report_received");
+    } catch (error) {
+      console.error("[question:report] Failed to store report:", error);
+      socket.emit("error:generic", { reason: "Your report couldn't be sent right now." });
     }
   });
 
-  // doodle:send — session-persistent gallery. Doodle is broadcast to BOTH players immediately.
-  // Only valid when the sender is the non-answering (waiting) player.
-  socket.on("doodle:send", async ({ dataUrl, round }) => {
+  socket.on("doodle:send", async (payload) => {
+    const dataUrl = payload?.dataUrl;
+    const round = payload?.round;
     const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-
-    // Basic validation: data URL, under 300KB
-    if (!dataUrl.startsWith("data:image/") || dataUrl.length > 300_000) return;
-
+    if (!roomId || !playerId || !isDoodleDataUrl(dataUrl) || typeof round !== "number" || !Number.isInteger(round)) return;
     try {
-      const roomState = await getJson<import("@twilight/shared-types").RoomState>(keys.room(roomId));
-      if (!roomState) return;
+      if (!await consumeRateLimit(clientAddress(socket), "doodle", 12, 60)) {
+        socket.emit("error:generic", { reason: "Too many doodles were sent. Please wait a minute." });
+        return;
+      }
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (
+          !room || room.status !== "active" || room.turn.answererPlayerId === playerId ||
+          room.turn.round !== round || !["answering", "locked"].includes(room.turn.phase)
+        ) return;
+        const sender = room.players.find((player) => player?.id === playerId);
+        if (!sender) return;
 
-      // Only the waiting (non-answering) player may send doodles
-      if (roomState.turn.answererPlayerId === playerId) return;
-
-      const sender = roomState.players.find((p) => p && p.id === playerId);
-      if (!sender) return;
-
-      const entry: import("@twilight/shared-types").DoodleEntry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        dataUrl,
-        senderPlayerId: playerId,
-        senderName: sender.displayName,
-        round,
-        timestamp: Date.now(),
-        reactions: {},
-      };
-
-      // Append to session gallery (max 50)
-      const gallery = (await getJson<import("@twilight/shared-types").DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
-      if (gallery.length >= 50) gallery.shift();
-      gallery.push(entry);
-      await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
-
-      // Broadcast immediately to both players
-      io.to(roomId).emit("doodle:new", entry);
-      console.log(`[doodle:send] Gallery entry ${entry.id} for room ${roomId} round ${round}`);
-    } catch (err: any) {
-      console.error("[doodle:send] Error:", err);
+        const gallery = (await getJson<DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
+        const entry: DoodleEntry = {
+          id: `${Date.now()}-${randomDoodleSuffix()}`,
+          dataUrl,
+          senderPlayerId: playerId,
+          senderName: sender.displayName,
+          round,
+          timestamp: Date.now(),
+          reactions: {},
+        };
+        if (gallery.length >= 20) gallery.shift();
+        gallery.push(entry);
+        await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
+        io.to(roomId).emit("doodle:new", entry);
+      });
+    } catch (error) {
+      console.error("[doodle:send] Failed:", error);
+      socket.emit("error:generic", { reason: "Your doodle couldn't sync. Please try again." });
     }
   });
 
-  // doodle:react — add/update an emoji reaction to a doodle (1 per player per doodle)
-  socket.on("doodle:react", async ({ doodleId, emoji }) => {
+  socket.on("doodle:react", async (payload) => {
+    const doodleId = payload?.doodleId;
+    const emoji = payload?.emoji;
     const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-    // Emoji must be a non-empty string under 16 chars
-    if (!emoji || emoji.length > 16) return;
-
+    if (!roomId || !playerId || typeof doodleId !== "string" || doodleId.length > 80 || typeof emoji !== "string" || !DOODLE_REACTIONS.has(emoji)) return;
     try {
-      const gallery = (await getJson<import("@twilight/shared-types").DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
-      const entry = gallery.find((e) => e.id === doodleId);
-      if (!entry) return;
-
-      entry.reactions[playerId] = emoji;
-      await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
-
-      io.to(roomId).emit("doodle:reaction_updated", { doodleId, playerId, emoji });
-    } catch (err: any) {
-      console.error("[doodle:react] Error:", err);
+      await withRoomLock(roomId, async () => {
+        const room = await loadRoom(roomId);
+        if (!room || !isParticipant(room, playerId)) return;
+        const gallery = (await getJson<DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
+        const entry = gallery.find((candidate) => candidate.id === doodleId);
+        if (!entry) return;
+        entry.reactions[playerId] = emoji;
+        await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
+        io.to(roomId).emit("doodle:reaction_updated", { doodleId, playerId, emoji });
+      });
+    } catch (error) {
+      console.error("[doodle:react] Failed:", error);
+      socket.emit("error:generic", { reason: "That reaction couldn't sync. Please try again." });
     }
   });
+}
+
+function randomDoodleSuffix(): string {
+  return Math.random().toString(36).slice(2, 10);
 }

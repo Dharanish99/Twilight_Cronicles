@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, User, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { useGameStore } from "@/lib/state/gameStore";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/Button";
@@ -31,8 +31,13 @@ export default function ProfilePage() {
           <h1 className="font-display text-2xl sm:text-3xl text-[var(--ink-primary)]">
             {localPlayer?.displayName || "Guest Player"}
           </h1>
-          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--success)] bg-[var(--success)]/10 px-3 py-1 rounded-full font-medium">
-            <ShieldCheck size={14} /> Anonymous Session Active
+          <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-medium ${
+            localPlayer
+              ? "text-[var(--success)] bg-[var(--success)]/10"
+              : "text-[var(--ink-tertiary)] bg-[var(--bg-sunken)]"
+          }`}>
+            {localPlayer && <ShieldCheck size={14} />}
+            {localPlayer ? "Guest session" : "No active guest session"}
           </span>
         </div>
 
@@ -46,7 +51,7 @@ export default function ProfilePage() {
           <div className="flex justify-between items-center text-sm">
             <span className="text-[var(--ink-secondary)]">Active Room</span>
             <span className="font-semibold text-[var(--ink-primary)]">
-              None
+              {localPlayer?.roomId ?? "None"}
             </span>
           </div>
         </div>

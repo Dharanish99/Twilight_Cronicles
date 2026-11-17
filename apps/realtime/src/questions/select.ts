@@ -1,12 +1,6 @@
 import type { CategoryId, RoomSettings } from "@twilight/shared-types";
-import path from "path";
-import fs from "fs";
-import { redisClient, keys } from "../redis/client";
-
-const SEED_PATH = path.resolve(
-  __dirname,
-  "../../../../packages/content/seed-questions.json"
-);
+import seedQuestionData from "../../../../packages/content/seed-questions.json";
+import { getJson, keys, setJson, ROOM_TTL_SECONDS } from "../redis/client";
 
 export interface SeedQuestion {
   id: string;
@@ -14,6 +8,7 @@ export interface SeedQuestion {
   category: string;
   intensity: number;
   minRound: number;
+  maxRound?: number;
   relationshipFit: string[];
   tags: string[];
   status: string;
@@ -24,19 +19,7 @@ export interface SeedQuestion {
   followUpPrompt?: string;
 }
 
-let seedQuestions: SeedQuestion[] = [];
-
-function loadSeed() {
-  if (seedQuestions.length > 0) return;
-  try {
-    const raw = fs.readFileSync(SEED_PATH, "utf-8");
-    const all = JSON.parse(raw) as SeedQuestion[];
-    seedQuestions = all.filter((q) => q.status === "published");
-    console.log(`[questions] Loaded ${seedQuestions.length} seed questions`);
-  } catch (err) {
-    console.warn("[questions] Failed to load seed questions file directly, trying fallback:", err);
-  }
-}
+const seedQuestions = (seedQuestionData as SeedQuestion[]).filter((q) => q.status === "published");
 
 const ROUND_INTENSITY_CEILING: Record<number, number> = {
   1: 2,
@@ -71,8 +54,6 @@ interface SelectOptions {
 export async function selectQuestion(
   opts: SelectOptions
 ): Promise<SeedQuestion | null> {
-  loadSeed();
-
   const {
     category,
     round,
@@ -83,15 +64,7 @@ export async function selectQuestion(
     previousSubcategory,
   } = opts;
 
-  let usedIds = new Set<string>();
-  try {
-    if (redisClient.status === "ready") {
-      const members = await redisClient.smembers(keys.usedQuestions(sessionId));
-      usedIds = new Set(members);
-    }
-  } catch {
-    // fallback
-  }
+  const usedIds = new Set((await getJson<string[]>(keys.usedQuestions(sessionId))) ?? []);
 
   let ceiling = getCeiling(round, settings);
   if (skipsThisTurn >= 2) ceiling = Math.max(1, ceiling - 1);
@@ -102,6 +75,7 @@ export async function selectQuestion(
       if (q.intensity > intCeiling) return false;
       if (q.intensity < 1) return false;
       if (q.minRound && round < q.minRound) return false;
+      if (q.maxRound && round > q.maxRound) return false;
       if (usedIds.has(q.id)) return false;
       // Apply relationship filter to all categories unless told to ignore it
       if (!ignoreRelationship && relationshipType && !q.relationshipFit.includes(relationshipType)) {
@@ -169,5 +143,7 @@ export async function selectQuestion(
 
   // Fresh uniform random pick — no ordering bias
   const picked = pool[Math.floor(Math.random() * pool.length)]!;
+  usedIds.add(picked.id);
+  await setJson(keys.usedQuestions(sessionId), [...usedIds], ROOM_TTL_SECONDS);
   return picked;
 }

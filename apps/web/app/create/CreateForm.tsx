@@ -40,6 +40,12 @@ export function CreateForm() {
     if (room && room.roomId) router.push(`/room/${room.roomId}/lobby`);
   }, [room, router]);
 
+  useEffect(() => {
+    // Socket errors arrive through the shared toast store after submission.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (toasts.length) setIsSubmitting(false);
+  }, [toasts.length]);
+
   const handleToggleCategory = (catId: CategoryId) => {
     if (selectedCategories.includes(catId)) {
       if (selectedCategories.length > 2) {
@@ -207,7 +213,7 @@ export function CreateForm() {
                 {[
                   { id: "gentle", label: "Gentle", desc: "Light & playful" },
                   { id: "balanced", label: "Balanced", desc: "Natural progression" },
-                  { id: "unfiltered", label: "Unfiltered", desc: "No guardrails" },
+                  { id: "deep", label: "Unfiltered", desc: "No guardrails" },
                 ].map((lvl) => (
                   <button
                     key={lvl.id}

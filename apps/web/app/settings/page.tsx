@@ -8,15 +8,13 @@ import { Button } from "@/components/ui/Button";
 import { ToastContainer } from "@/components/ui/Toast";
 
 export default function GlobalSettingsPage() {
-  const { theme, toggleTheme } = useThemeStore();
-  const { toasts, removeToast, addToast, resetGame } = useGameStore();
+  const { theme, toggleTheme, setTheme } = useThemeStore();
+  const { toasts, removeToast, addToast, clearLocalData } = useGameStore();
 
   const handleClearData = () => {
-    resetGame();
-    if (typeof localStorage !== "undefined") {
-      localStorage.clear();
-    }
-    addToast("All local cache and session data cleared.", "success");
+    setTheme("daylight");
+    clearLocalData();
+    addToast("Browser session and preferences cleared.", "success");
   };
 
   return (
@@ -76,7 +74,7 @@ export default function GlobalSettingsPage() {
                 Clear Local Data
               </p>
               <p className="text-xs text-[var(--ink-tertiary)]">
-                Removes saved tokens and caches
+                Removes the guest token and theme preference
               </p>
             </div>
           </div>

@@ -1,10 +1,10 @@
 {
-  "": "https://turbo.build/schema.json",
+  "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$", ".env*"],
+      "env": ["NEXT_PUBLIC_REALTIME_URL"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {

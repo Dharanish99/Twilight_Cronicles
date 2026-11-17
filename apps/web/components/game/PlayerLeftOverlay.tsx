@@ -1,31 +1,24 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 
 interface PlayerLeftOverlayProps {
   partnerName: string;
-  roomId: string;
   onDismiss: () => void;
 }
 
-export function PlayerLeftOverlay({ partnerName, roomId, onDismiss }: PlayerLeftOverlayProps) {
+export function PlayerLeftOverlay({ partnerName, onDismiss }: PlayerLeftOverlayProps) {
   const router  = useRouter();
   const reduced = useReducedMotion();
-  const [waiting, setWaiting] = useState(false);
 
   function handleEndSession() {
     router.push("/");
   }
 
   function handleWait() {
-    setWaiting(true);
     onDismiss();
-    // Auto re-show after 30s if still not reconnected
-    // (the player:left event won't fire again — parent keeps partnerLeft set —
-    // so onDismiss just collapses the overlay for 30s)
   }
 
   return (
@@ -80,7 +73,7 @@ export function PlayerLeftOverlay({ partnerName, roomId, onDismiss }: PlayerLeft
               {partnerName} has left
             </h2>
             <p className="text-sm text-[var(--ink-secondary)] max-w-xs leading-relaxed">
-              They stepped away from the session. You can end now or wait a moment to see if they return.
+              They stepped away from the session. You can end now or keep the room open while they reconnect.
             </p>
           </div>
 

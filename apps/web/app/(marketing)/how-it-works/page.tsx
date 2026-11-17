@@ -49,9 +49,9 @@ export default function HowItWorksPage() {
           How it works
         </h1>
         <p className="text-xl text-ink-secondary leading-relaxed">
-          Twilight Chronicles is a two-player turn-based conversation game. No timers to
-          stress you out, no points to chase, no leaderboards. Just questions worth
-          answering.
+          Twilight Chronicles is a two-player turn-based conversation game. There are no
+          points to chase or leaderboards. The optional pacing timer never cuts an answer
+          off. Just questions worth answering.
         </p>
       </div>
 

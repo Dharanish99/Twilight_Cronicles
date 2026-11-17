@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect } from "react";
 import Link from "next/link";
 import { Sparkles, RotateCcw, Home } from "lucide-react";
 import { useGameStore } from "@/lib/state/gameStore";
@@ -21,20 +21,28 @@ export default function CompletePage({ params }: CompletePageProps) {
     gameCompletedData,
     toasts,
     removeToast,
-    addToast,
-    resetGame,
+    leaveRoom,
+    localPlayer,
+    initSocketListeners,
+    resumeRoom,
   } = useGameStore();
 
-  const roundsCompleted =
-    gameCompletedData?.roundsCompleted ?? room?.settings?.rounds ?? 6;
-  const categoriesUsed = (gameCompletedData?.categoriesUsed ?? [
-    "deep", "emotional", "playful", "memories",
-  ]) as any[];
-  const durationSeconds = gameCompletedData?.durationSeconds ?? 1420;
-  const minutes = Math.floor(durationSeconds / 60);
-  const sessionCount = room?.sessionCount ?? 1;
+  useEffect(() => {
+    initSocketListeners();
+  }, [initSocketListeners]);
 
-  const [showPacingPrompt, setShowPacingPrompt] = useState(sessionCount >= 2);
+  useEffect(() => {
+    if (!room && localPlayer?.sessionToken && localPlayer.roomId === roomId) resumeRoom();
+  }, [room, localPlayer, roomId, resumeRoom]);
+
+  const roundsCompleted = gameCompletedData?.roundsCompleted ?? (room?.status === "completed" ? room.turn.round : null);
+  const categoriesUsed = gameCompletedData?.categoriesUsed ?? room?.usedCategories ?? [];
+  const durationSeconds = gameCompletedData?.durationSeconds ?? (
+    room?.startedAt && room.completedAt
+      ? Math.max(0, Math.floor((Date.parse(room.completedAt) - Date.parse(room.startedAt)) / 1000))
+      : null
+  );
+  const minutes = durationSeconds === null ? null : Math.floor(durationSeconds / 60);
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--ink-primary)] flex flex-col justify-between p-5 sm:p-8">
@@ -59,7 +67,9 @@ export default function CompletePage({ params }: CompletePageProps) {
             The Dusk Settles.
           </h1>
           <p className="text-[var(--ink-secondary)] text-base mt-2 max-w-md">
-            You completed {roundsCompleted} rounds of honest, unhurried conversation.
+            {roundsCompleted === null
+              ? "Your room is no longer available on this tab."
+              : `You completed ${roundsCompleted} rounds of honest, unhurried conversation.`}
           </p>
         </div>
 
@@ -68,14 +78,14 @@ export default function CompletePage({ params }: CompletePageProps) {
           <div className="p-5 rounded-[var(--radius-lg)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
             <span className="category-label text-[var(--ink-tertiary)]">Conversation Time</span>
             <p className="font-display text-3xl font-semibold text-[var(--ink-primary)] mt-1">
-              ~{minutes}m
+              {minutes === null ? "—" : `~${minutes}m`}
             </p>
           </div>
 
           <div className="p-5 rounded-[var(--radius-lg)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
             <span className="category-label text-[var(--ink-tertiary)]">Rounds Completed</span>
             <p className="font-display text-3xl font-semibold text-[var(--ink-primary)] mt-1">
-              {roundsCompleted}
+              {roundsCompleted ?? "—"}
             </p>
           </div>
         </div>
@@ -87,13 +97,13 @@ export default function CompletePage({ params }: CompletePageProps) {
           </span>
           <div className="flex flex-wrap gap-2 justify-center">
             {categoriesUsed.map((catId) => {
-              const def = CATEGORIES[catId as keyof typeof CATEGORIES];
+              const def = CATEGORIES[catId];
               return (
                 <div
                   key={catId}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-xs"
                 >
-                  <CategoryIcon category={catId as any} size={14} />
+                  <CategoryIcon category={catId} size={14} />
                   <span className="font-medium text-[var(--ink-primary)]">
                     {def?.label ?? catId}
                   </span>
@@ -104,42 +114,23 @@ export default function CompletePage({ params }: CompletePageProps) {
         </div>
 
         {/* Afterglow recap card — develops from desaturated to full colour */}
-        <AfterglowCard
-          categoriesUsed={categoriesUsed}
-          roundsCompleted={roundsCompleted}
-          durationSeconds={durationSeconds}
-        />
-
-        {/* Returning-pair pacing prompt — shown only from the 2nd session onwards */}
-        {showPacingPrompt && (
-          <div className="w-full max-w-sm p-4 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex flex-col gap-2 text-left">
-            <p className="text-sm text-[var(--ink-primary)] font-medium">
-              You two have played a few rounds already.
-            </p>
-            <p className="text-xs text-[var(--ink-secondary)]">
-              Start a little deeper this time? The next session will open at a higher intensity.
-            </p>
-            <div className="flex gap-2 mt-1">
-              <button
-                type="button"
-                onClick={() => setShowPacingPrompt(false)}
-                className="text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink-primary)] underline underline-offset-2 transition-colors"
-              >
-                Maybe later
-              </button>
-            </div>
-          </div>
+        {roundsCompleted !== null && durationSeconds !== null && (
+          <AfterglowCard
+            categoriesUsed={categoriesUsed}
+            roundsCompleted={roundsCompleted}
+            durationSeconds={durationSeconds}
+          />
         )}
 
         {/* Action Controls */}
         <div className="flex flex-col gap-3 w-full max-w-sm mt-2">
-          <Link href="/create" onClick={() => resetGame()} className="w-full">
+          <Link href="/create" onClick={() => leaveRoom()} className="w-full">
             <Button variant="primary" size="lg" id="play-again-btn">
               <RotateCcw size={18} className="mr-2" /> Start Another Game
             </Button>
           </Link>
 
-          <Link href="/" onClick={() => resetGame()} className="w-full">
+          <Link href="/" onClick={() => leaveRoom()} className="w-full">
             <Button variant="text" size="md" className="w-full">
               <Home size={16} className="mr-2" /> Return to Home
             </Button>

@@ -9,6 +9,7 @@ import type {
   CategoryId,
   AvatarId,
   ReactionId,
+  RelationshipType,
   QuestionPayload,
   AnswerSharedPayload,
   GameCompletedPayload,
@@ -18,6 +19,8 @@ import type {
 import {
   getSocket,
   connectSocket,
+  disconnectSocket,
+  resumeSocketSession,
   areListenersInitialized,
   markListenersInitialized,
 } from "../socket/client";
@@ -26,8 +29,9 @@ interface LocalPlayer {
   id: string;
   displayName: string;
   avatar: AvatarId;
-  relationshipType?: string;
+  relationshipType?: RelationshipType;
   sessionToken?: string;
+  roomId?: string;
 }
 
 interface ToastMessage {
@@ -84,27 +88,64 @@ interface GameStore {
     displayName: string,
     avatar: AvatarId,
     settings: RoomSettings,
-    relationshipType?: string
+    relationshipType?: RelationshipType
   ) => void;
   joinRoom: (
     displayName: string,
     avatar: AvatarId,
     roomCode?: string,
     inviteToken?: string,
-    relationshipType?: string
+    relationshipType?: RelationshipType
   ) => void;
+  resumeRoom: () => void;
+  leaveRoom: () => void;
+  clearLocalData: () => void;
   toggleReady: () => void;
   startGame: () => void;
   flipCoin: () => void;
   selectCategory: (category: CategoryId) => void;
   sendDraftUpdate: (text: string) => void;
   lockAnswer: () => void;
+  unlockAnswer: () => void;
   shareAnswer: () => void;
   skipQuestion: () => void;
   sendReaction: (reaction: ReactionId) => void;
   sendDoodle: (dataUrl: string, round: number) => void;
   sendDoodleReaction: (doodleId: string, emoji: string) => void;
   resetGame: () => void;
+}
+
+let draftSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingDraftText: string | null = null;
+let preserveLocalDraftOnRestore = false;
+
+function queueDraftSync(text: string): void {
+  pendingDraftText = text;
+  if (draftSyncTimer) clearTimeout(draftSyncTimer);
+  draftSyncTimer = setTimeout(() => {
+    draftSyncTimer = null;
+    const socket = getSocket();
+    if (pendingDraftText !== null && socket.connected) {
+      socket.emit("turn:answer_draft", { text: pendingDraftText });
+      pendingDraftText = null;
+    }
+  }, 120);
+}
+
+function flushDraftSync(): void {
+  if (draftSyncTimer) clearTimeout(draftSyncTimer);
+  draftSyncTimer = null;
+  if (pendingDraftText === null) return;
+  const socket = getSocket();
+  if (!socket.connected) return;
+  socket.emit("turn:answer_draft", { text: pendingDraftText });
+  pendingDraftText = null;
+}
+
+function cancelDraftSync(): void {
+  if (draftSyncTimer) clearTimeout(draftSyncTimer);
+  draftSyncTimer = null;
+  pendingDraftText = null;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -192,23 +233,58 @@ export const useGameStore = create<GameStore>()(
 
         socket.on("connect", () => {
           set({ connectionStatus: "connected" });
+          const token = get().localPlayer?.sessionToken;
+          if (token) resumeSocketSession(token);
         });
 
-        socket.on("disconnect", () => {
-          set({ connectionStatus: "disconnected" });
+        socket.on("disconnect", (reason) => {
+          set({ connectionStatus: reason === "io client disconnect" ? "disconnected" : "reconnecting" });
         });
 
         socket.on("connect_error", () => {
           set({ connectionStatus: "reconnecting" });
         });
 
-        socket.on("room:identity", ({ playerId }: { playerId: string }) => {
-          console.log(`[Store] Received official identity from server: ${playerId}`);
-          set({ myServerId: playerId });
+        socket.on("room:identity", ({ playerId, sessionToken, roomId }) => {
+          set((state) => ({
+            myServerId: playerId,
+            localPlayer: state.localPlayer
+              ? { ...state.localPlayer, sessionToken, roomId }
+              : state.localPlayer,
+          }));
         });
 
         socket.on("room:state_snapshot", (roomState: RoomState) => {
-          set({ room: roomState });
+          set(() => {
+            const shouldClearAnswer =
+              roomState.status === "completed" ||
+              ["coin_toss_waiting", "coin_toss_flipping", "choosing_category"].includes(roomState.turn.phase);
+            if (shouldClearAnswer) cancelDraftSync();
+            return {
+              room: roomState,
+              sharedAnswer: roomState.sharedAnswer ?? null,
+              ...(shouldClearAnswer
+                ? { currentQuestion: null, draftText: "", isDraftLocked: false }
+                : {}),
+            };
+          });
+        });
+
+        socket.on("room:resumed", () => {
+          const state = get();
+          if (
+            state.room?.turn.answererPlayerId === state.myServerId &&
+            state.room.turn.phase === "answering" &&
+            state.draftText
+          ) {
+            pendingDraftText = state.draftText;
+            flushDraftSync();
+          }
+          preserveLocalDraftOnRestore = false;
+        });
+
+        socket.on("room:doodle_gallery_snapshot", (entries) => {
+          set({ doodleGallery: entries });
         });
 
         socket.on("room:player_joined", ({ player }: { player: PlayerState }) => {
@@ -248,22 +324,26 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("turn:question_ready", (questionPayload: QuestionPayload) => {
-          set((state) => ({
-            currentQuestion: questionPayload,
-            draftText: "",
-            isDraftLocked: false,
-            sharedAnswer: null,
-            room: state.room
-              ? {
-                  ...state.room,
-                  turn: {
-                    ...state.room.turn,
-                    phase: "answering" as TurnPhase,
-                    chosenCategory: questionPayload.category,
-                  },
-                }
-              : null,
-          }));
+          set((state) => {
+            const sameQuestion = state.currentQuestion?.questionId === questionPayload.questionId;
+            preserveLocalDraftOnRestore = sameQuestion;
+            if (!sameQuestion) cancelDraftSync();
+            return {
+              currentQuestion: questionPayload,
+              ...(!sameQuestion ? { draftText: "" } : {}),
+              isDraftLocked: false,
+              sharedAnswer: null,
+              room: state.room
+                ? {
+                    ...state.room,
+                    turn: {
+                      ...state.room.turn,
+                      chosenCategory: questionPayload.category,
+                    },
+                  }
+                : null,
+            };
+          });
         });
 
         socket.on("turn:phase_update", ({ phase, chosenCategory }: { phase: TurnPhase; chosenCategory?: CategoryId }) => {
@@ -278,15 +358,27 @@ export const useGameStore = create<GameStore>()(
                   ...(chosenCategory ? { chosenCategory } : {}),
                 },
               },
+              ...(phase === "answering" ? { isDraftLocked: false } : {}),
             };
           });
         });
 
         socket.on("turn:answer_locked", () => {
-          set({ isDraftLocked: true });
+          set((state) => ({
+            isDraftLocked: true,
+            room: state.room
+              ? { ...state.room, turn: { ...state.room.turn, phase: "locked" as TurnPhase } }
+              : null,
+          }));
+        });
+
+        socket.on("turn:answer_draft_restored", ({ text }) => {
+          if (!preserveLocalDraftOnRestore && pendingDraftText === null) set({ draftText: text });
+          set({ isDraftLocked: false });
         });
 
         socket.on("turn:answer_shared", (payload: AnswerSharedPayload) => {
+          cancelDraftSync();
           set((state) => ({
             sharedAnswer: payload,
             room: state.room
@@ -372,7 +464,7 @@ export const useGameStore = create<GameStore>()(
             const updated = state.room.players.map((p) =>
               p && p.id === playerId ? { ...p, connection: "connected" as const } : p
             ) as [PlayerState, PlayerState?];
-            return { room: { ...state.room, players: updated } };
+            return { room: { ...state.room, players: updated }, partnerLeft: null };
           });
         });
 
@@ -389,6 +481,13 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("error:invalid_room", ({ reason }: { reason: string }) => {
+          if (/session has expired|room has expired/i.test(reason)) {
+            set((state) => ({
+              localPlayer: state.localPlayer
+                ? { ...state.localPlayer, sessionToken: undefined, roomId: undefined }
+                : null,
+            }));
+          }
           get().addToast(reason || "Invalid room", "neutral");
         });
 
@@ -404,6 +503,8 @@ export const useGameStore = create<GameStore>()(
       // ─────────── ACTIONS ───────────
 
       createRoom: (displayName, avatar, settings, relationshipType) => {
+        cancelDraftSync();
+        set({ room: null, myServerId: null, currentQuestion: null, sharedAnswer: null, draftText: "", isDraftLocked: false, gameCompletedData: null, doodleGallery: [] });
         get().initSocketListeners();
         const socket = getSocket();
         socket.emit("room:create", {
@@ -415,6 +516,8 @@ export const useGameStore = create<GameStore>()(
       },
 
       joinRoom: (displayName, avatar, roomCode, inviteToken, relationshipType) => {
+        cancelDraftSync();
+        set({ room: null, myServerId: null, currentQuestion: null, sharedAnswer: null, draftText: "", isDraftLocked: false, gameCompletedData: null, doodleGallery: [] });
         get().initSocketListeners();
         const socket = getSocket();
         socket.emit("room:join", {
@@ -426,61 +529,132 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      toggleReady: () => {
-        getSocket().emit("room:ready");
+      resumeRoom: () => {
+        const sessionToken = get().localPlayer?.sessionToken;
+        if (!sessionToken) return;
+        get().initSocketListeners();
+        resumeSocketSession(sessionToken);
       },
 
-      startGame: () => {
-        getSocket().emit("game:start");
+      leaveRoom: () => {
+        cancelDraftSync();
+        const socket = getSocket();
+        if (socket.connected) socket.emit("room:leave");
+        set((state) => ({
+          localPlayer: state.localPlayer
+            ? { ...state.localPlayer, sessionToken: undefined, roomId: undefined }
+            : null,
+          room: null,
+          myServerId: null,
+          currentQuestion: null,
+          sharedAnswer: null,
+          draftText: "",
+          isDraftLocked: false,
+          gameCompletedData: null,
+          doodleGallery: [],
+          partnerLeft: null,
+        }));
       },
 
-      flipCoin: () => {
-        getSocket().emit("turn:flip_coin");
-      },
-
-      selectCategory: (category) => {
-        getSocket().emit("turn:select_category", { category });
-      },
-
-      sendDraftUpdate: (text) => {
-        set({ draftText: text });
-        getSocket().emit("turn:answer_draft", { text });
-      },
-
-      lockAnswer: () => {
-        set({ isDraftLocked: true });
-        getSocket().emit("turn:answer_lock");
-      },
-
-      shareAnswer: () => {
-        getSocket().emit("turn:answer_share");
-      },
-
-      skipQuestion: () => {
-        getSocket().emit("turn:skip");
-      },
-
-      sendReaction: (reaction) => {
-        getSocket().emit("reaction:send", { reaction });
-      },
-
-      sendDoodle: (dataUrl, round) => {
-        getSocket().emit("doodle:send", { dataUrl, round });
-      },
-
-      sendDoodleReaction: (doodleId, emoji) => {
-        getSocket().emit("doodle:react", { doodleId, emoji });
-      },
-
-      resetGame: () => {
+      clearLocalData: () => {
+        cancelDraftSync();
+        const socket = getSocket();
+        if (socket.connected) socket.emit("room:leave");
+        disconnectSocket();
         set({
+          localPlayer: null,
+          myServerId: null,
+          connectionStatus: "disconnected",
           room: null,
           currentQuestion: null,
           sharedAnswer: null,
           draftText: "",
           isDraftLocked: false,
           gameCompletedData: null,
+          doodleGallery: [],
           activeReactions: [],
+          partnerLeft: null,
+        });
+        if (typeof window !== "undefined") {
+          window.sessionStorage.removeItem("twilight-game-store");
+          window.localStorage.removeItem("twilight-theme");
+        }
+      },
+
+      toggleReady: () => {
+        if (getSocket().connected) getSocket().emit("room:ready");
+        else get().addToast("Reconnecting before updating your ready status…", "neutral");
+      },
+
+      startGame: () => {
+        if (getSocket().connected) getSocket().emit("game:start");
+        else get().addToast("Reconnect before starting the conversation.", "neutral");
+      },
+
+      flipCoin: () => {
+        if (getSocket().connected) getSocket().emit("turn:flip_coin");
+        else get().addToast("Reconnect before flipping the coin.", "neutral");
+      },
+
+      selectCategory: (category) => {
+        if (getSocket().connected) getSocket().emit("turn:select_category", { category });
+        else get().addToast("Reconnect before choosing a mood.", "neutral");
+      },
+
+      sendDraftUpdate: (text) => {
+        set({ draftText: text });
+        queueDraftSync(text);
+      },
+
+      lockAnswer: () => {
+        if (getSocket().connected) {
+          flushDraftSync();
+          getSocket().emit("turn:answer_lock");
+        }
+        else get().addToast("Reconnect before locking your answer.", "neutral");
+      },
+
+      unlockAnswer: () => {
+        if (getSocket().connected) getSocket().emit("turn:answer_unlock");
+        else get().addToast("Reconnect before editing your answer.", "neutral");
+      },
+
+      shareAnswer: () => {
+        if (getSocket().connected) getSocket().emit("turn:answer_share");
+        else get().addToast("Reconnect before continuing.", "neutral");
+      },
+
+      skipQuestion: () => {
+        if (getSocket().connected) getSocket().emit("turn:skip");
+        else get().addToast("Reconnect before skipping this question.", "neutral");
+      },
+
+      sendReaction: (reaction) => {
+        if (getSocket().connected) getSocket().emit("reaction:send", { reaction });
+      },
+
+      sendDoodle: (dataUrl, round) => {
+        if (getSocket().connected) getSocket().emit("doodle:send", { dataUrl, round });
+        else get().addToast("Reconnect before sending your doodle.", "neutral");
+      },
+
+      sendDoodleReaction: (doodleId, emoji) => {
+        if (getSocket().connected) getSocket().emit("doodle:react", { doodleId, emoji });
+      },
+
+      resetGame: () => {
+        cancelDraftSync();
+        set({
+          room: null,
+          myServerId: null,
+          currentQuestion: null,
+          sharedAnswer: null,
+          draftText: "",
+          isDraftLocked: false,
+          gameCompletedData: null,
+          activeReactions: [],
+          doodleGallery: [],
+          partnerLeft: null,
         });
       },
     }),

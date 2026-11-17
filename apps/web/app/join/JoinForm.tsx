@@ -2,9 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, LogIn } from "lucide-react";
-import type { AvatarId, RelationshipType } from "@twilight/shared-types";
+import { LogIn } from "lucide-react";
+import type { AvatarId } from "@twilight/shared-types";
 import { useGameStore } from "@/lib/state/gameStore";
 import { Button } from "@/components/ui/Button";
 import { PlayerAvatar, AVATAR_IDS } from "@/components/ui/PlayerAvatar";
@@ -18,26 +17,27 @@ function JoinFormInner() {
 
   const { joinRoom, room, setLocalPlayer, toasts, removeToast } = useGameStore();
 
-  const [roomCode, setRoomCode] = useState(codeParam.toUpperCase());
+  const [roomCode, setRoomCode] = useState(() => codeParam.toUpperCase());
   const [displayName, setDisplayName] = useState("");
   const [avatar, setAvatar] = useState<AvatarId>("sage");
-  const [relationshipType, setRelationshipType] = useState<RelationshipType>("friends");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (codeParam) setRoomCode(codeParam.toUpperCase());
-  }, [codeParam]);
 
   useEffect(() => {
     if (room && room.roomId) router.push(`/room/${room.roomId}/lobby`);
   }, [room, router]);
 
+  useEffect(() => {
+    // Socket errors arrive through the shared toast store after submission.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (toasts.length) setIsSubmitting(false);
+  }, [toasts.length]);
+
   const handleJoin = () => {
     if (!displayName.trim()) return;
     if (!tokenParam && roomCode.length < 6) return;
     setIsSubmitting(true);
-    setLocalPlayer({ id: "guest", displayName: displayName.trim(), avatar, relationshipType });
-    joinRoom(displayName.trim(), avatar, roomCode.trim() || undefined, tokenParam || undefined, relationshipType);
+    setLocalPlayer({ id: "guest", displayName: displayName.trim(), avatar });
+    joinRoom(displayName.trim(), avatar, roomCode.trim() || undefined, tokenParam || undefined);
   };
 
   return (

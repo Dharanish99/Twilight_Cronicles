@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { CategoryId, ReactionId, AvatarId } from "@twilight/shared-types";
 import { getCategoryColor } from "@/lib/theme/categories";

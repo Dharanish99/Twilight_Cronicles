@@ -4,7 +4,7 @@
   - [x] Root monorepo structure (pnpm workspace, turbo.json, package.json) <!-- id: 1 -->
   - [x] Docker Compose setup for PostgreSQL & Redis <!-- id: 2 -->
   - [x] Prisma schema with Question, Highlight, Report models <!-- id: 3 -->
-  - [x] Content package with 121 seed questions across 10 categories <!-- id: 4 -->
+  - [x] Content package with 120 seed questions across 10 categories <!-- id: 4 -->
   - [x] Shared TypeScript contracts and socket event definitions <!-- id: 5 -->
 - [x] Phase 1: Design Tokens & Core Components <!-- id: 6 -->
   - [x] Daylight & Dusk design token CSS system <!-- id: 7 -->
@@ -32,14 +32,17 @@
   - [x] Private typing & answer lock flow <!-- id: 29 -->
   - [x] Reveal card with interactive reaction broadcasting <!-- id: 30 -->
 - [x] Phase 5: Post-Game & Auxiliary Pages <!-- id: 31 -->
-  - [x] Game completion summary & highlight bookmarking <!-- id: 32 -->
+  - [x] Game completion summary <!-- id: 32 -->
+  - [ ] Persistent saved highlights (not connected to a storage service) <!-- id: 34 -->
   - [x] In-game room settings & theme switcher <!-- id: 33 -->
-  - [x] Saved highlights reader <!-- id: 34 -->
+  - [ ] Saved highlights reader (waiting on persistent highlights) <!-- id: 34a -->
   - [x] Player profile <!-- id: 35 -->
   - [x] Global settings & cache controls <!-- id: 36 -->
   - [x] Question safety report flow <!-- id: 37 -->
   - [x] Dev component showcase gallery <!-- id: 38 -->
-- [x] Phase 6: End-to-End Validation <!-- id: 39 -->
-  - [x] Next.js 29-route static generation & build verification <!-- id: 40 -->
-  - [x] Realtime service TypeScript compilation & health checks <!-- id: 41 -->
-  - [x] Browser E2E navigation verification <!-- id: 42 -->
+- [ ] Phase 6: Production Acceptance <!-- id: 39 -->
+  - [x] Current Next.js production build <!-- id: 40 -->
+  - [x] Web/realtime TypeScript checks, web lint, and realtime bundle build <!-- id: 41 -->
+  - [x] Two-client Socket.IO smoke: private question, shared answer, draft restore, and next turn <!-- id: 42 -->
+  - [ ] Redis-backed readiness and multi-replica reconnect verification <!-- id: 43 -->
+  - [ ] Two-browser visual/responsive acceptance <!-- id: 44 -->

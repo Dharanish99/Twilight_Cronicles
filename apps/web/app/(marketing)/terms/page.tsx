@@ -42,9 +42,8 @@ export default function TermsPage() {
             3. Content Moderation & Reporting
           </h2>
           <p>
-            We provide reporting tools within every game session. If you encounter questions
-            that violate community safety standards, you may flag them for immediate review
-            by our safety team.
+            You may flag a question from within a game. Reports are queued for possible content
+            review. This release has no moderation dashboard, continuous monitoring, or response-time guarantee.
           </p>
         </section>
 

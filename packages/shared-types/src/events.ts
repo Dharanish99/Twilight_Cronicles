@@ -1,6 +1,6 @@
 // packages/shared-types/src/events.ts
 import type { PlayerState, TurnState, RoomState, GameCompletedPayload } from "./room";
-import type { CategoryId, TurnPhase, ReactionId } from "./categories";
+import type { AvatarId, CategoryId, IntensityCeiling, RelationshipType, TurnPhase, ReactionId } from "./categories";
 
 export interface QuestionPayload {
   questionId: string;
@@ -16,7 +16,7 @@ export interface AnswerSharedPayload {
   text: string;
   category: CategoryId;
   answerText: string;
-  answeredBy: { id: string; name: string; avatar: string };
+  answeredBy: { id: string; name: string; avatar: AvatarId };
 }
 
 /** A single entry in the session-persistent doodle gallery */
@@ -36,7 +36,10 @@ export interface ServerToClientEvents {
   "room:state_snapshot": (state: RoomState) => void;
   "room:player_joined": (payload: { player: PlayerState }) => void;
   "room:player_ready": (payload: { playerId: string; ready: boolean }) => void;
-  "room:identity": (payload: { playerId: string }) => void;
+  "room:identity": (payload: { playerId: string; sessionToken: string; roomId: string }) => void;
+  "room:resumed": () => void;
+  "room:doodle_gallery_snapshot": (entries: DoodleEntry[]) => void;
+  "question:report_received": () => void;
 
   "game:started": (payload: { firstActivePlayerId: string }) => void;
   "game:completed": (payload: GameCompletedPayload) => void;
@@ -45,6 +48,7 @@ export interface ServerToClientEvents {
   "turn:category_selected": (payload: { category: CategoryId }) => void;
   "turn:question_ready": (payload: QuestionPayload) => void;
   "turn:answer_locked": () => void;
+  "turn:answer_draft_restored": (payload: { text: string }) => void;
   "turn:answer_shared": (payload: AnswerSharedPayload) => void;
   "turn:completed": (payload: { round: number; nextActivePlayerId: string }) => void;
   "turn:phase_update": (payload: { phase: TurnPhase; chosenCategory?: CategoryId }) => void;
@@ -76,29 +80,32 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   "room:create": (payload: {
     displayName: string;
-    avatar: string;
+    avatar: AvatarId;
     settings: {
       rounds: number;
-      intensityCeiling: string;
+      intensityCeiling: IntensityCeiling;
       categories: CategoryId[];
       timerSeconds: number | null;
     };
-    relationshipType?: string;
+    relationshipType?: RelationshipType;
   }) => void;
 
   "room:join": (payload: {
     inviteToken?: string;
     roomCode?: string;
     displayName: string;
-    avatar: string;
-    relationshipType?: string;
+    avatar: AvatarId;
+    relationshipType?: RelationshipType;
   }) => void;
 
   "room:ready": () => void;
+  "room:resume": (payload: { sessionToken: string }) => void;
+  "room:leave": () => void;
 
   "turn:select_category": (payload: { category: CategoryId }) => void;
   "turn:answer_draft": (payload: { text: string }) => void;
   "turn:answer_lock": () => void;
+  "turn:answer_unlock": () => void;
   "turn:answer_share": () => void;
   "turn:skip": () => void;
   "turn:flip_coin": () => void;

@@ -26,10 +26,11 @@ export default function LobbyPage({ params }: LobbyPageProps) {
   const {
     room,
     localPlayer,
+    myServerId,
     connectionStatus,
     toggleReady,
     startGame,
-    joinRoom,
+    resumeRoom,
     initSocketListeners,
     toasts,
     removeToast,
@@ -48,10 +49,24 @@ export default function LobbyPage({ params }: LobbyPageProps) {
 
   // Re-join room if we arrived without state (page refresh)
   useEffect(() => {
-    if (!room && roomId && localPlayer) {
-      joinRoom(localPlayer.displayName, localPlayer.avatar, roomId);
+    if (!room && localPlayer?.sessionToken && localPlayer.roomId === roomId) {
+      resumeRoom();
     }
-  }, [roomId, room, localPlayer, joinRoom]);
+  }, [roomId, room, localPlayer, resumeRoom]);
+
+  useEffect(() => {
+    if (
+      connectionStatus === "connected" &&
+      room === null &&
+      (!localPlayer?.sessionToken || localPlayer.roomId !== roomId)
+    ) {
+      router.replace(`/join?code=${encodeURIComponent(roomId)}`);
+    }
+  }, [connectionStatus, localPlayer, room, roomId, router]);
+
+  useEffect(() => {
+    if (room?.status === "completed") router.replace(`/room/${roomId}/complete`);
+  }, [room?.status, roomId, router]);
 
   // CRITICAL FIX: Only navigate to play screen when game is explicitly started and both players joined
   useEffect(() => {
@@ -63,8 +78,7 @@ export default function LobbyPage({ params }: LobbyPageProps) {
   const player1 = room?.players?.[0];
   const player2 = room?.players?.[1];
 
-  const isLocalP1 = player1?.displayName === localPlayer?.displayName;
-  const isLocalP2 = player2?.displayName === localPlayer?.displayName;
+  const isLocalP1 = !!myServerId && player1?.id === myServerId;
   const myPlayer = isLocalP1 ? player1 : player2 || player1;
   const isReady = myPlayer?.ready ?? false;
 
@@ -72,7 +86,9 @@ export default function LobbyPage({ params }: LobbyPageProps) {
 
   const inviteUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/join?code=${roomId}`
+      ? room?.inviteToken
+        ? `${window.location.origin}/join?token=${encodeURIComponent(room.inviteToken)}`
+        : `${window.location.origin}/join?code=${roomId}`
       : "";
 
   const copyInviteLink = async () => {
@@ -105,8 +121,23 @@ export default function LobbyPage({ params }: LobbyPageProps) {
         </Link>
       </header>
 
+      {connectionStatus !== "connected" && (
+        <div className="max-w-2xl mx-auto w-full mt-3 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--accent-ember-tint)] text-sm text-[var(--ink-primary)]" role="status" aria-live="polite">
+          {connectionStatus === "reconnecting" ? "Reconnecting to your room…" : "You’re offline. Keep this page open while the connection returns."}
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="max-w-lg mx-auto w-full my-auto py-6 flex flex-col items-center gap-8 text-center">
+        {room?.status === "expired" ? (
+          <div className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] bg-surface-elevated border border-theme-subtle p-8">
+            <span className="category-label text-[var(--accent-ember)]">Room Closed</span>
+            <h1 className="font-display text-3xl text-ink-primary">This room is no longer available.</h1>
+            <p className="text-sm text-ink-secondary">The host left before the conversation began. Start a new room or ask your partner for a fresh invite.</p>
+            <Link href="/" className="text-sm font-semibold text-[var(--accent-ember)] hover:underline">Return Home</Link>
+          </div>
+        ) : (
+          <>
         <div>
           <span className="category-label text-[var(--accent-ember)] font-semibold">
             Game Lobby
@@ -248,6 +279,8 @@ export default function LobbyPage({ params }: LobbyPageProps) {
             </div>
           )}
         </div>
+          </>
+        )}
       </main>
 
       {/* Footer */}

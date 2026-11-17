@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { CategoryId } from "@twilight/shared-types";
 import { getCategoryColor } from "@/lib/theme/categories";
@@ -9,19 +9,16 @@ import {
   answerLockSettle,
   lockSeal,
   shareDrift,
-  skipDriftExit,
-  skipDriftEnter,
 } from "@/lib/theme/motion";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { SkipControl } from "@/components/ui/SkipControl";
 import { Button } from "@/components/ui/Button";
 import { pickCopy, HIGH_INTENSITY_LOCK_ACK } from "@/lib/copy/pools";
+import { Clock3 } from "lucide-react";
 
 export type QuestionState = "revealed" | "typing" | "locked" | "shared";
 
 interface QuestionCardProps {
-  round: number;
-  totalRounds: number;
   category: CategoryId;
   question: string;
   /** intensity 1-5, used to decide whether to show HIGH_INTENSITY_LOCK_ACK */
@@ -39,8 +36,6 @@ interface QuestionCardProps {
 }
 
 export function QuestionCard({
-  round,
-  totalRounds,
   category,
   question,
   intensity = 3,
@@ -61,8 +56,6 @@ export function QuestionCard({
   const lockAnim    = answerLockSettle(reduced);
   const sealAnim    = lockSeal(reduced);
   const shareExit   = shareDrift(reduced);
-  const skipExitAnim  = skipDriftExit(reduced);
-  const skipEnterAnim = skipDriftEnter(reduced);
   const accentColor = getCategoryColor(category);
 
   const isLocked   = state === "locked";
@@ -70,19 +63,10 @@ export function QuestionCard({
 
   // ── High-intensity lock acknowledgement line ────────────────────────────────
   // Picked fresh each time we enter the locked state; held stable while locked.
-  const [lockAck, setLockAck] = useState<string | null>(null);
-  const prevStatRef = useRef<QuestionState>(state);
-
-  useEffect(() => {
-    if (state === "locked" && prevStatRef.current !== "locked") {
-      if (intensity >= 5) {
-        setLockAck(pickCopy(HIGH_INTENSITY_LOCK_ACK));
-      } else {
-        setLockAck(null);
-      }
-    }
-    prevStatRef.current = state;
-  }, [state, intensity]);
+  const lockAck = useMemo(
+    () => state === "locked" && intensity >= 5 ? pickCopy(HIGH_INTENSITY_LOCK_ACK) : null,
+    [state, intensity]
+  );
 
   // ── Vibration on lock (feature-detected; no-op where unsupported) ───────────
   const handleLock = useCallback(() => {
@@ -135,6 +119,25 @@ export function QuestionCard({
         </motion.div>
       </AnimatePresence>
 
+      {timer && (
+        <div className="flex flex-col gap-1.5 relative z-10" role="timer" aria-label={`Answer time remaining: ${timer.secondsRemaining} seconds`}>
+          <div className="flex items-center justify-between text-xs text-[var(--ink-tertiary)]">
+            <span className="inline-flex items-center gap-1.5"><Clock3 size={14} aria-hidden="true" /> Your pace</span>
+            <span className="tabular-nums font-medium text-[var(--ink-secondary)]">
+              {timer.secondsRemaining > 0
+                ? `${Math.floor(timer.secondsRemaining / 60)}:${String(timer.secondsRemaining % 60).padStart(2, "0")}`
+                : "Take your time"}
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-[var(--bg-sunken)] overflow-hidden" aria-hidden="true">
+            <div
+              className="h-full rounded-full bg-[var(--accent-ember)] transition-[width] duration-500"
+              style={{ width: `${Math.max(0, Math.min(100, (timer.secondsRemaining / timer.total) * 100))}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Answer area — shareDrift exit when state → "shared" */}
       <AnimatePresence mode="wait">
         {state !== "shared" && (
@@ -159,6 +162,7 @@ export function QuestionCard({
             <textarea
               value={draft}
               onChange={(e) => onDraftChange(e.target.value)}
+              maxLength={3000}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder="Type your answer here…"

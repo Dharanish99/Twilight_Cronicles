@@ -62,7 +62,6 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
   const P2_FACE_BG = "linear-gradient(145deg, hsl(250 40% 42%), hsl(250 40% 28%))";
   const P1_BORDER  = "var(--accent-ember)";
   const P2_BORDER  = "hsl(250 40% 55%)";
-  const ACCENT     = "var(--accent-ember)";
 
   // Landing glow: winner side
   const winnerGlow = isWinnerP1
@@ -107,9 +106,9 @@ export function CoinToss({ player1, player2, winnerId, isTosser, phase, onFlip }
   }, [coinControls, finalRotY, reduced]);
 
   useEffect(() => {
-    if (phase === "coin_toss_flipping") {
-      runFlipAnimation();
-    }
+    if (phase !== "coin_toss_flipping") return;
+    const frame = window.requestAnimationFrame(() => void runFlipAnimation());
+    return () => window.cancelAnimationFrame(frame);
   }, [phase, runFlipAnimation]);
 
   return (

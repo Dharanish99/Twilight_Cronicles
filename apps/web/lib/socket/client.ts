@@ -10,6 +10,7 @@ type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let socketInstance: TypedSocket | null = null;
 let listenersInitialized = false;
+let resumeSocketId: string | null = null;
 
 export function getSocket(): TypedSocket {
   if (!socketInstance) {
@@ -20,8 +21,10 @@ export function getSocket(): TypedSocket {
         const isLocal =
           window.location.hostname === "localhost" ||
           window.location.hostname === "127.0.0.1";
-        // On localhost connect directly to 3001, on ngrok/remote connect to same origin via proxy
-        url = isLocal ? "http://localhost:3001" : window.location.origin;
+        // Local development can use the adjacent realtime service. Remote and
+        // production builds must explicitly name a browser-reachable endpoint.
+        if (isLocal) url = "http://localhost:3001";
+        else throw new Error("NEXT_PUBLIC_REALTIME_URL must be configured for this site.");
       } else {
         url = "http://localhost:3001";
       }
@@ -30,18 +33,21 @@ export function getSocket(): TypedSocket {
     socketInstance = io(url, {
       autoConnect: false,
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      transports: ["polling", "websocket"],
-      withCredentials: true,
+      transports: ["websocket", "polling"],
+      tryAllTransports: true,
+      withCredentials: false,
     });
 
     socketInstance.on("connect", () => {
+      resumeSocketId = null;
       console.log("[Socket] Connected to realtime server with id:", socketInstance?.id);
     });
 
     socketInstance.on("disconnect", (reason) => {
+      resumeSocketId = null;
       console.log("[Socket] Disconnected:", reason);
     });
 
@@ -67,7 +73,15 @@ export function disconnectSocket(): void {
     socketInstance.disconnect();
     socketInstance = null;
     listenersInitialized = false;
+    resumeSocketId = null;
   }
+}
+
+export function resumeSocketSession(sessionToken: string): void {
+  const socket = connectSocket();
+  if (!socket.connected || !socket.id || resumeSocketId === socket.id) return;
+  resumeSocketId = socket.id;
+  socket.emit("room:resume", { sessionToken });
 }
 
 /**

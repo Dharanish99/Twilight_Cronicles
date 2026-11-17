@@ -29,15 +29,11 @@ export function AnswerSentScreen({
   onQuoteShown,
 }: AnswerSentScreenProps) {
   const reduced = useReducedMotion();
-  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quote] = useState<Quote>(() => pickQuote(category, usedQuoteIds));
 
   useEffect(() => {
-    const q = pickQuote(category, usedQuoteIds);
-    setQuote(q);
-    onQuoteShown(q.id);
-    // Only pick once per mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+    onQuoteShown(quote.id);
+  }, [onQuoteShown, quote.id]);
 
   const fadeUp = reduced
     ? {}
