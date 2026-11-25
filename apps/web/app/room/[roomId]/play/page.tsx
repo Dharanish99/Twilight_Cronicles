@@ -4,7 +4,7 @@ import { useEffect, use, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings as SettingsIcon, Flag, Pencil, ImageIcon } from "lucide-react";
-import type { CategoryId, ReactionId } from "@twilight/shared-types";
+import type { CategoryId, DoodleSendResult, ReactionId } from "@twilight/shared-types";
 import { useGameStore } from "@/lib/state/gameStore";
 import { CategoryGrid } from "@/components/game/CategoryGrid";
 import { QuestionCard } from "@/components/game/QuestionCard";
@@ -42,7 +42,6 @@ export default function PlayPage({ params }: PlayPageProps) {
     lockAnswer,
     unlockAnswer,
     shareAnswer,
-    skipQuestion,
     sendReaction,
     resumeRoom,
     syncRoomState,
@@ -192,8 +191,13 @@ export default function PlayPage({ params }: PlayPageProps) {
 
   const handleContinueAfterReveal = useCallback(() => shareAnswer(), [shareAnswer]);
 
-  const handleSendDoodle = useCallback((dataUrl: string, r: number) => {
-    sendDoodle(dataUrl, r);
+  const handleSendDoodle = useCallback((
+    dataUrl: string,
+    r: number,
+    clientId: string,
+    onResult: (result: DoodleSendResult) => void,
+  ) => {
+    return sendDoodle(dataUrl, r, clientId, onResult);
   }, [sendDoodle]);
 
   const handleDoodleReact = useCallback((doodleId: string, emoji: string) => {
@@ -380,7 +384,6 @@ export default function PlayPage({ params }: PlayPageProps) {
                 onDraftChange={sendDraftUpdate}
                 onLock={lockAnswer}
                 onShare={() => shareAnswer()}
-                onSkip={skipQuestion}
                 onUnlockEdit={unlockAnswer}
                 partnerName={partnerName}
                 followUpPrompt={currentQuestion?.followUpPrompt}

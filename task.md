@@ -10,7 +10,7 @@
   - [x] Daylight & Dusk design token CSS system <!-- id: 7 -->
   - [x] Fraunces + Inter typography configuration <!-- id: 8 -->
   - [x] Framer Motion animation variant library with reduced-motion support <!-- id: 9 -->
-  - [x] UI component library (Button, Toast, Dialog, BottomSheet, PlayerAvatar, ConnectionIndicator, RoomCodeDisplay, TurnIndicator, SkipControl) <!-- id: 10 -->
+  - [x] UI component library (Button, Toast, Dialog, BottomSheet, PlayerAvatar, ConnectionIndicator, RoomCodeDisplay, TurnIndicator) <!-- id: 10 -->
   - [x] Game component library (CategoryCard, CategoryGrid, QuestionCard, WaitingScreen, RevealCard, TurnTransition) <!-- id: 11 -->
 - [x] Phase 2: Marketing & Informational Pages <!-- id: 12 -->
   - [x] Landing page with hero, how-it-works summary, mood showcase, and CTAs <!-- id: 13 -->

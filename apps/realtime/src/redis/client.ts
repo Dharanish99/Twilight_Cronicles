@@ -31,6 +31,7 @@ export const keys = {
   turnQuestion: (sessionId: string) => `turn_question:${sessionId}`,
   doodleGallery: (roomId: string) => `doodle:gallery:${roomId}`,
   usedQuestions: (sessionId: string) => `used_questions:${sessionId}`,
+  pairQuestionHistory: (pairHistoryId: string) => `pair_question_history:${pairHistoryId}`,
   questionReports: "question:reports",
   roomLock: (roomId: string) => `room_lock:${roomId}`,
   rateLimit: (ip: string, action: string) => `ratelimit:${action}:${ip}`,

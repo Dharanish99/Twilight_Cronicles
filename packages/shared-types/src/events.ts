@@ -31,6 +31,15 @@ export interface DoodleEntry {
   reactions: Record<string, string>;
 }
 
+/** Reactions supported by the Doodle gallery on both the client and server. */
+export const DOODLE_REACTION_EMOJIS = ["❤️", "✨", "🥺", "💯", "😮", "👍", "😂"] as const;
+
+export interface DoodleSendResult {
+  ok: boolean;
+  /** Safe, user-facing reason when a doodle was not accepted. */
+  reason?: string;
+}
+
 // Server -> Client events
 export interface ServerToClientEvents {
   "room:state_snapshot": (state: RoomState) => void;
@@ -107,7 +116,6 @@ export interface ClientToServerEvents {
   "turn:answer_lock": () => void;
   "turn:answer_unlock": () => void;
   "turn:answer_share": () => void;
-  "turn:skip": () => void;
   "turn:flip_coin": () => void;
 
   "reaction:send": (payload: { reaction: ReactionId }) => void;
@@ -115,7 +123,10 @@ export interface ClientToServerEvents {
   "question:report": (payload: { questionId: string; reason: string }) => void;
 
   /** Send a doodle — only valid when sender is the waiting (non-answering) player */
-  "doodle:send": (payload: { dataUrl: string; round: number }) => void;
+  "doodle:send": (
+    payload: { dataUrl: string; round: number; clientId?: string },
+    acknowledge?: (result: DoodleSendResult) => void,
+  ) => void;
   /** React to an existing doodle with an emoji */
   "doodle:react": (payload: { doodleId: string; emoji: string }) => void;
 

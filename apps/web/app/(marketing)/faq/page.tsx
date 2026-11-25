@@ -32,11 +32,11 @@ const FAQS = [
   },
   {
     q: "How many questions are there?",
-    a: "120 curated questions across 10 categories. The question engine avoids repeats within a room until its category pool is exhausted.",
+    a: "The game begins with 120 curated questions across 10 categories, then draws from a large local living deck of safe variations. Returning pairs keep a private 90-day question history, so repeat sessions continue to feel fresh.",
   },
   {
-    q: "Can I skip a question?",
-    a: "Yes. There is a \"Not this one\" skip option during your turn. Skipping is frictionless, confidential, and delivers another prompt in the same category.",
+    q: "Can I change a question once it arrives?",
+    a: "Questions are intentionally committed once chosen, so each turn has one shared prompt to answer. You can always keep your answer brief, light, and within your own boundaries.",
   },
   {
     q: "What is the difference between the categories?",
@@ -44,7 +44,7 @@ const FAQS = [
   },
   {
     q: "Can I play more than once with the same person?",
-    a: "Yes. Each session is fresh. The question engine avoids repeating questions you have seen before in the same room.",
+    a: "Yes. The game remembers the pair's previous curated prompts and generated-deck position for 90 days, using an opaque server-side identifier based on your display names and relationship choice. Keep those the same to continue the fresh-question history.",
   },
 ];
 

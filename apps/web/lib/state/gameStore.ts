@@ -15,6 +15,7 @@ import type {
   GameCompletedPayload,
   RoomSettings,
   DoodleEntry,
+  DoodleSendResult,
 } from "@twilight/shared-types";
 import {
   getSocket,
@@ -107,9 +108,13 @@ interface GameStore {
   lockAnswer: () => void;
   unlockAnswer: () => void;
   shareAnswer: () => void;
-  skipQuestion: () => void;
   sendReaction: (reaction: ReactionId) => void;
-  sendDoodle: (dataUrl: string, round: number) => void;
+  sendDoodle: (
+    dataUrl: string,
+    round: number,
+    clientId: string,
+    onResult: (result: DoodleSendResult) => void,
+  ) => boolean;
   sendDoodleReaction: (doodleId: string, emoji: string) => void;
   resetGame: () => void;
 }
@@ -145,6 +150,18 @@ function cancelDraftSync(): void {
   if (draftSyncTimer) clearTimeout(draftSyncTimer);
   draftSyncTimer = null;
   pendingDraftText = null;
+}
+
+function normalizeDoodleGallery(entries: readonly DoodleEntry[]): DoodleEntry[] {
+  const seen = new Set<string>();
+  return [...entries]
+    .filter((entry) => {
+      if (seen.has(entry.id)) return false;
+      seen.add(entry.id);
+      return true;
+    })
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-20);
 }
 
 export const useGameStore = create<GameStore>()(
@@ -192,7 +209,10 @@ export const useGameStore = create<GameStore>()(
 
       doodleGallery: [],
       addDoodleEntry: (entry) =>
-        set((state) => ({ doodleGallery: [...state.doodleGallery, entry] })),
+        set((state) => {
+          if (state.doodleGallery.some((existing) => existing.id === entry.id)) return {};
+          return { doodleGallery: normalizeDoodleGallery([...state.doodleGallery, entry]) };
+        }),
       updateDoodleReaction: (doodleId, playerId, emoji) =>
         set((state) => ({
           doodleGallery: state.doodleGallery.map((d) =>
@@ -286,7 +306,7 @@ export const useGameStore = create<GameStore>()(
         });
 
         socket.on("room:doodle_gallery_snapshot", (entries) => {
-          set({ doodleGallery: entries });
+          set({ doodleGallery: normalizeDoodleGallery(entries) });
         });
 
         socket.on("room:player_joined", ({ player }: { player: PlayerState }) => {
@@ -424,7 +444,6 @@ export const useGameStore = create<GameStore>()(
                   tosserPlayerId: nextActivePlayerId,
                   round,
                   phase: "coin_toss_waiting" as TurnPhase,
-                  skipsThisTurn: 0,
                 },
               },
             };
@@ -639,18 +658,23 @@ export const useGameStore = create<GameStore>()(
         else get().addToast("Reconnect before continuing.", "neutral");
       },
 
-      skipQuestion: () => {
-        if (getSocket().connected) getSocket().emit("turn:skip");
-        else get().addToast("Reconnect before skipping this question.", "neutral");
-      },
-
       sendReaction: (reaction) => {
         if (getSocket().connected) getSocket().emit("reaction:send", { reaction });
       },
 
-      sendDoodle: (dataUrl, round) => {
-        if (getSocket().connected) getSocket().emit("doodle:send", { dataUrl, round });
-        else get().addToast("Reconnect before sending your doodle.", "neutral");
+      sendDoodle: (dataUrl, round, clientId, onResult) => {
+        const socket = getSocket();
+        if (!socket.connected) {
+          const result: DoodleSendResult = { ok: false, reason: "Reconnect before sending your doodle." };
+          onResult(result);
+          get().addToast(result.reason!, "neutral");
+          return false;
+        }
+        socket.emit("doodle:send", { dataUrl, round, clientId }, (result) => {
+          if (!result.ok) get().addToast(result.reason ?? "Your doodle couldn't sync. Please try again.", "neutral");
+          onResult(result);
+        });
+        return true;
       },
 
       sendDoodleReaction: (doodleId, emoji) => {

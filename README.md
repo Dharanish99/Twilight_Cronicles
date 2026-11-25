@@ -36,6 +36,7 @@ Configure the realtime service with:
 - `NODE_ENV=production`
 - `PORT` (provided by the hosting platform)
 - `REDIS_URL=rediss://...` for a private, TLS-enabled Redis service
+- `PAIR_HISTORY_SECRET`, a long, random value that remains stable between deploys. It turns a returning pair's display names and relationship choices into an opaque server-only history key.
 - `WEB_ORIGIN=https://www.example.com` (comma-separated exact origins are supported)
 - `TRUST_PROXY=true` only when the realtime service is reachable through a trusted ingress that sets `X-Forwarded-For`; keep direct public access to the service disabled in that setup.
 
@@ -49,6 +50,7 @@ The realtime server uses WebSocket first and polling as a fallback. If the hosti
 - Each player receives an opaque resume token. It is stored in the current browser tab's `sessionStorage`; display names are never used to recover player identity.
 - The answer draft is sent to the realtime service so it can survive a network drop. It is private from the other player until the answerer shares it. Drafts are not end-to-end encrypted.
 - The optional answer timer is a pacing cue; it never forces a lock or submission. Room state expires after 24 hours without activity. Reports are kept in a bounded Redis queue for up to 90 days. Each room keeps at most 20 doodles, and each image is limited to 80 KB of encoded data.
+- A pair's seen curated questions and position in the local living deck are retained for 90 days through an opaque HMAC key; raw display names are not stored in that key or sent to the browsers. This keeps repeat sessions fresh. Changing a display name or relationship choice starts a new prompt history.
 - The PostgreSQL schema is scaffolding and is not connected to the game server. Accounts, encrypted highlights, and long-term answer history are not available in this version.
 
 ## Two-player smoke check
@@ -60,3 +62,4 @@ The realtime server uses WebSocket first and polling as a fallback. If the hosti
 5. Confirm the waiting player never sees the draft before sharing; after sharing, both see the same answer and room phase.
 6. Refresh the answerer's page while answering and confirm the same question and last synced draft return.
 7. Disconnect and reconnect one client; confirm the other sees the connection state update and the game continues.
+8. While one player is answering, open Doodles on the waiting player's device, draw and send a sketch, and confirm it appears once for both players. Retry after a temporary connection interruption and confirm the same sketch is not duplicated.

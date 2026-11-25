@@ -11,7 +11,6 @@ import {
   shareDrift,
 } from "@/lib/theme/motion";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
-import { SkipControl } from "@/components/ui/SkipControl";
 import { Button } from "@/components/ui/Button";
 import { pickCopy, HIGH_INTENSITY_LOCK_ACK } from "@/lib/copy/pools";
 import { Clock3 } from "lucide-react";
@@ -28,7 +27,6 @@ interface QuestionCardProps {
   onDraftChange: (v: string) => void;
   onLock: () => void;
   onShare: (partnerName: string) => void;
-  onSkip: () => void;
   onUnlockEdit: () => void;
   partnerName?: string;
   timer?: { secondsRemaining: number; total: number } | null;
@@ -44,7 +42,6 @@ export function QuestionCard({
   onDraftChange,
   onLock,
   onShare,
-  onSkip,
   onUnlockEdit,
   partnerName = "them",
   timer,
@@ -204,9 +201,6 @@ export function QuestionCard({
             >
               Lock it in
             </Button>
-            <div className="flex justify-center">
-              <SkipControl onSkip={onSkip} />
-            </div>
           </>
         )}
         {isLocked && (

@@ -40,7 +40,6 @@ function room(
       tosserPlayerId: "p1",
       round,
       phase,
-      skipsThisTurn: 0,
     },
     sharedAnswer,
   };

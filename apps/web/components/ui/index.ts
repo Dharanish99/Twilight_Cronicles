@@ -7,4 +7,3 @@ export * from "./ConnectionIndicator";
 export * from "./ProgressBar";
 export * from "./RoomCodeDisplay";
 export * from "./TurnIndicator";
-export * from "./SkipControl";

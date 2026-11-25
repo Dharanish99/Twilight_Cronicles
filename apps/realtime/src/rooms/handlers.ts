@@ -278,7 +278,6 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
           answererPlayerId: "",
           round: 1,
           phase: "choosing_category",
-          skipsThisTurn: 0,
         },
         usedCategories: [],
         sharedAnswer: null,
@@ -492,7 +491,6 @@ export function registerRoomHandlers(io: AppServer, socket: AppSocket): void {
           tosserPlayerId: p1.id,
           round: 1,
           phase: "coin_toss_waiting",
-          skipsThisTurn: 0,
         };
         await saveRoom(room);
         io.to(roomId).emit("game:started", { firstActivePlayerId: p1.id });

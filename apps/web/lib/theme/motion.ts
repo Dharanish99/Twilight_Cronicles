@@ -171,22 +171,6 @@ export const shareDrift = (reduced: boolean) => ({
 });
 
 /**
- * skipDrift — dismissed question drifts down, replacement fades in from below.
- * Use `exit` on the dismissed card and `initial` on the entering card.
- * Reduced: instant crossfade.
- */
-export const skipDriftExit = (reduced: boolean) => ({
-  exit: reduced ? { opacity: 0 } : { opacity: 0, y: 12 },
-  transition: reduced ? { duration: 0.1 } : { duration: 0.2, ease: EASE_OUT },
-});
-
-export const skipDriftEnter = (reduced: boolean) => ({
-  initial: reduced ? { opacity: 0 } : { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  transition: reduced ? { duration: 0.1 } : { duration: 0.2, ease: EASE_OUT },
-});
-
-/**
  * threadExtend — a line draws between two points.
  * Implemented via SVG `pathLength` or scaleX on a div.
  * Reduced: instant full-length line, no draw-on animation.

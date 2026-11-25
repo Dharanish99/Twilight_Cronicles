@@ -1,6 +1,21 @@
+import { randomInt } from "node:crypto";
 import type { CategoryId, RoomSettings } from "@twilight/shared-types";
 import seedQuestionData from "../../../../packages/content/seed-questions.json";
-import { getJson, keys, setJson, ROOM_TTL_SECONDS } from "../redis/client";
+import {
+  getJson,
+  keys,
+  ROOM_TTL_SECONDS,
+  setJson,
+  withRoomLock,
+} from "../redis/client";
+import { createLivingQuestion } from "./livingDeck";
+import {
+  emptyPairQuestionHistory,
+  PAIR_HISTORY_TTL_SECONDS,
+  recordSeedQuestion,
+  takeLivingSequence,
+  type PairQuestionHistory,
+} from "./pairHistory";
 
 export interface SeedQuestion {
   id: string;
@@ -45,39 +60,47 @@ interface SelectOptions {
   category: CategoryId;
   round: number;
   settings: RoomSettings;
+  /** Questions already used in the current room. */
   sessionId: string;
-  skipsThisTurn?: number;
+  /** Opaque server-only identifier for a returning two-player pair. */
+  pairHistoryId?: string | null;
   relationshipType?: string;
   previousSubcategory?: string;
 }
 
-export async function selectQuestion(
-  opts: SelectOptions
-): Promise<SeedQuestion | null> {
+function pickFrom<T>(items: readonly T[]): T {
+  return items[randomInt(items.length)]!;
+}
+
+async function selectQuestionUnlocked(opts: SelectOptions): Promise<SeedQuestion> {
   const {
     category,
     round,
     settings,
     sessionId,
-    skipsThisTurn = 0,
+    pairHistoryId,
     relationshipType,
     previousSubcategory,
   } = opts;
 
-  const usedIds = new Set((await getJson<string[]>(keys.usedQuestions(sessionId))) ?? []);
-
-  let ceiling = getCeiling(round, settings);
-  if (skipsThisTurn >= 2) ceiling = Math.max(1, ceiling - 1);
+  const [storedRoomIds, storedPairHistory] = await Promise.all([
+    getJson<string[]>(keys.usedQuestions(sessionId)),
+    pairHistoryId
+      ? getJson<PairQuestionHistory>(keys.pairQuestionHistory(pairHistoryId))
+      : Promise.resolve(null),
+  ]);
+  const usedInRoom = new Set(storedRoomIds ?? []);
+  let pairHistory = storedPairHistory ?? emptyPairQuestionHistory();
+  const usedByPair = new Set(pairHistory.usedSeedQuestionIds);
+  const ceiling = getCeiling(round, settings);
 
   function filterCandidates(intCeiling: number, ignoreRelationship = false): SeedQuestion[] {
     return seedQuestions.filter((q) => {
       if (q.category !== category) return false;
-      if (q.intensity > intCeiling) return false;
-      if (q.intensity < 1) return false;
+      if (q.intensity > intCeiling || q.intensity < 1) return false;
       if (q.minRound && round < q.minRound) return false;
       if (q.maxRound && round > q.maxRound) return false;
-      if (usedIds.has(q.id)) return false;
-      // Apply relationship filter to all categories unless told to ignore it
+      if (usedInRoom.has(q.id) || usedByPair.has(q.id)) return false;
       if (!ignoreRelationship && relationshipType && !q.relationshipFit.includes(relationshipType)) {
         return false;
       }
@@ -85,65 +108,59 @@ export async function selectQuestion(
     });
   }
 
+  // We progressively relax matching preferences, never the no-repeat rule for
+  // this pair. Once curated questions are exhausted, the living deck takes over.
   let candidates = filterCandidates(ceiling);
-
-  // Fallback 1: drop relationship filter (keeps intensity constraint)
-  if (candidates.length === 0 && relationshipType) {
-    candidates = filterCandidates(ceiling, true);
-  }
-
-  // Fallback 2: widen intensity by 1 (with relationship filter)
-  if (candidates.length === 0) {
-    candidates = filterCandidates(ceiling + 1);
-  }
-
-  // Fallback 3: widen intensity AND drop relationship filter
-  if (candidates.length === 0) {
-    candidates = filterCandidates(ceiling + 1, true);
-  }
-
-  // Fallback 4: safe-default questions in the same category
+  if (candidates.length === 0 && relationshipType) candidates = filterCandidates(ceiling, true);
+  if (candidates.length === 0) candidates = filterCandidates(ceiling + 1);
+  if (candidates.length === 0) candidates = filterCandidates(ceiling + 1, true);
   if (candidates.length === 0) {
     candidates = seedQuestions.filter(
-      (q) => q.category === category && q.tags.includes("safe_default") && !usedIds.has(q.id)
+      (q) =>
+        q.category === category &&
+        q.tags.includes("safe_default") &&
+        !usedInRoom.has(q.id) &&
+        !usedByPair.has(q.id)
+    );
+  }
+  if (candidates.length === 0) {
+    candidates = seedQuestions.filter(
+      (q) => q.category === category && !usedInRoom.has(q.id) && !usedByPair.has(q.id)
     );
   }
 
-  // Fallback 5: any unused question in this category
-  if (candidates.length === 0) {
-    candidates = seedQuestions.filter((q) => q.category === category && !usedIds.has(q.id));
-  }
-
-  // Fallback 6: any question in this category (pool exhausted)
-  if (candidates.length === 0) {
-    candidates = seedQuestions.filter((q) => q.category === category);
-  }
-
-  if (candidates.length === 0) {
-    return {
-      id: `fallback-${Date.now()}`,
-      text: "What is something on your mind tonight that you haven't said out loud yet?",
+  let selected: SeedQuestion;
+  if (candidates.length > 0) {
+    const differentSubcategory = previousSubcategory
+      ? candidates.filter((q) => q.subcategory !== previousSubcategory)
+      : [];
+    selected = pickFrom(differentSubcategory.length > 0 ? differentSubcategory : candidates);
+    if (pairHistoryId) pairHistory = recordSeedQuestion(pairHistory, selected.id);
+  } else {
+    const living = takeLivingSequence(pairHistory, category);
+    pairHistory = living.history;
+    selected = createLivingQuestion({
       category,
-      intensity: 2,
-      minRound: 1,
-      relationshipFit: ["friends", "more_than_friends", "just_meeting"],
-      tags: ["safe_default"],
-      status: "published",
-      estimatedAnswerSeconds: 60,
-      skipSensitivity: "standard",
-      contentWarningLevel: "none",
-    };
+      pairHistoryId: pairHistoryId ?? sessionId,
+      sequence: living.sequence,
+    });
   }
 
-  let pool = candidates;
-  if (previousSubcategory) {
-    const diffSub = candidates.filter((q) => q.subcategory !== previousSubcategory);
-    if (diffSub.length > 0) pool = diffSub;
-  }
+  usedInRoom.add(selected.id);
+  await Promise.all([
+    setJson(keys.usedQuestions(sessionId), [...usedInRoom], ROOM_TTL_SECONDS),
+    ...(pairHistoryId
+      ? [setJson(keys.pairQuestionHistory(pairHistoryId), pairHistory, PAIR_HISTORY_TTL_SECONDS)]
+      : []),
+  ]);
+  return selected;
+}
 
-  // Fresh uniform random pick — no ordering bias
-  const picked = pool[Math.floor(Math.random() * pool.length)]!;
-  usedIds.add(picked.id);
-  await setJson(keys.usedQuestions(sessionId), [...usedIds], ROOM_TTL_SECONDS);
-  return picked;
+/**
+ * Selects a fresh prompt. A pair-level lock makes concurrent rooms for the
+ * same returning two people advance the shared deck exactly once per prompt.
+ */
+export async function selectQuestion(opts: SelectOptions): Promise<SeedQuestion> {
+  if (!opts.pairHistoryId) return selectQuestionUnlocked(opts);
+  return withRoomLock(`pair-question-history:${opts.pairHistoryId}`, () => selectQuestionUnlocked(opts));
 }

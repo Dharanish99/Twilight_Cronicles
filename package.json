@@ -8,7 +8,7 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "pnpm --filter @twilight/realtime exec tsx --test src/turns/coin.test.ts ../../apps/web/lib/state/reconcileRoomSnapshot.test.ts"
+    "test": "pnpm --filter @twilight/realtime exec tsx --test src/turns/coin.test.ts src/questions/livingDeck.test.ts src/questions/select.test.ts ../../apps/web/lib/state/reconcileRoomSnapshot.test.ts ../../apps/web/lib/socket/doodleRealtime.integration.test.ts"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

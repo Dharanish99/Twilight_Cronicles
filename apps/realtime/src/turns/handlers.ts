@@ -1,15 +1,17 @@
 import type { Server, Socket } from "socket.io";
+import { randomUUID } from "node:crypto";
 import type {
   CategoryId,
   ClientToServerEvents,
   DoodleEntry,
   InterServerEvents,
+  PlayerState,
   ReactionId,
   RoomState,
   ServerToClientEvents,
   SocketData,
 } from "@twilight/shared-types";
-import { CATEGORY_IDS } from "@twilight/shared-types";
+import { CATEGORY_IDS, DOODLE_REACTION_EMOJIS } from "@twilight/shared-types";
 import {
   consumeRateLimit,
   deleteKey,
@@ -22,6 +24,7 @@ import {
 } from "../redis/client";
 import { loadRoom, playerChannel, saveRoom, touchRoom } from "../rooms/state";
 import { selectQuestion, type SeedQuestion } from "../questions/select";
+import { getPairQuestionHistoryId } from "../questions/pairHistory";
 import { scheduleCoinTossAdvance } from "./schedule";
 import { pickCoinTossWinner } from "./coin";
 
@@ -45,7 +48,7 @@ const REACTIONS = new Set<ReactionId>(["heart", "spark", "soft", "same", "surpri
 const REPORT_REASONS = new Set([
   "offensive", "too_personal", "repetitive", "poorly_written", "wrong_category", "other",
 ]);
-const DOODLE_REACTIONS = new Set(["❤️", "✨", "🥺", "💯", "😮", "👍", "😂"]);
+const DOODLE_REACTIONS = new Set<string>(DOODLE_REACTION_EMOJIS);
 
 function questionPayload(question: SeedQuestion) {
   return {
@@ -74,6 +77,10 @@ function isDoodleDataUrl(value: unknown): value is string {
     value.length <= 80_000;
 }
 
+function isDoodleClientId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{16,96}$/.test(value);
+}
+
 export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
   socket.on("turn:select_category", async (payload) => {
     const category = payload?.category;
@@ -94,6 +101,9 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
         io.to(roomId).emit("turn:category_selected", { category });
         io.to(roomId).emit("turn:phase_update", { phase: "question_loading", chosenCategory: category });
 
+        const activePlayers = room.players.filter(
+          (player): player is PlayerState => Boolean(player)
+        );
         const hostRelationship = room.players[0]?.relationshipTypeShared;
         let question: SeedQuestion | null;
         try {
@@ -102,7 +112,7 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
             round: room.turn.round,
             settings: room.settings,
             sessionId: roomId,
-            skipsThisTurn: room.turn.skipsThisTurn,
+            pairHistoryId: getPairQuestionHistoryId(activePlayers),
             relationshipType: hostRelationship,
           });
         } catch (error) {
@@ -238,7 +248,6 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
             tosserPlayerId: nextTosser,
             round: nextRound,
             phase: "coin_toss_waiting",
-            skipsThisTurn: 0,
             answerDeadlineAt: null,
             phaseEndsAt: null,
           };
@@ -277,43 +286,6 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
     } catch (error) {
       console.error("[turn:answer_share] Failed:", error);
       socket.emit("error:generic", { reason: "We couldn't share that answer. Please try again." });
-    }
-  });
-
-  socket.on("turn:skip", async () => {
-    const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId) return;
-    try {
-      await withRoomLock(roomId, async () => {
-        const room = await loadRoom(roomId);
-        if (
-          !room || room.status !== "active" || room.turn.answererPlayerId !== playerId ||
-          room.turn.phase !== "answering" || !room.turn.chosenCategory
-        ) return;
-
-        const skipCount = room.turn.skipsThisTurn + 1;
-        const question = await selectQuestion({
-          category: room.turn.chosenCategory,
-          round: room.turn.round,
-          settings: room.settings,
-          sessionId: roomId,
-          skipsThisTurn: skipCount,
-          relationshipType: room.players[0]?.relationshipTypeShared,
-        });
-        if (!question) return;
-
-        await setJson(keys.turnQuestion(roomId), question, TURN_DRAFT_TTL_SECONDS);
-        await deleteKey(keys.turnDraft(roomId));
-        room.turn.skipsThisTurn = skipCount;
-        room.sharedAnswer = null;
-        setAnswerDeadline(room);
-        await saveRoom(room);
-        io.to(roomId).emit("room:state_snapshot", room);
-        io.to(playerChannel(roomId, playerId)).emit("turn:question_ready", questionPayload(question));
-      });
-    } catch (error) {
-      console.error("[turn:skip] Failed:", error);
-      socket.emit("error:generic", { reason: "We couldn't skip to another question. Please try again." });
     }
   });
 
@@ -396,28 +368,61 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
     }
   });
 
-  socket.on("doodle:send", async (payload) => {
+  socket.on("doodle:send", async (payload, acknowledge) => {
     const dataUrl = payload?.dataUrl;
     const round = payload?.round;
+    const clientId = payload?.clientId;
     const { roomId, playerId } = socket.data;
-    if (!roomId || !playerId || !isDoodleDataUrl(dataUrl) || typeof round !== "number" || !Number.isInteger(round)) return;
+    const reply = (ok: boolean, reason?: string) => acknowledge?.({ ok, ...(reason ? { reason } : {}) });
+    const reject = (reason: string) => {
+      reply(false, reason);
+      if (!acknowledge) socket.emit("error:generic", { reason });
+    };
+    if (
+      !roomId || !playerId || !isDoodleDataUrl(dataUrl) ||
+      typeof round !== "number" || !Number.isSafeInteger(round) || round < 1 ||
+      (clientId !== undefined && !isDoodleClientId(clientId))
+    ) {
+      reject("That doodle could not be saved. Please try again.");
+      return;
+    }
+
     try {
-      if (!await consumeRateLimit(clientAddress(socket), "doodle", 12, 60)) {
-        socket.emit("error:generic", { reason: "Too many doodles were sent. Please wait a minute." });
-        return;
-      }
       await withRoomLock(roomId, async () => {
         const room = await loadRoom(roomId);
-        if (
-          !room || room.status !== "active" || room.turn.answererPlayerId === playerId ||
-          room.turn.round !== round || !["answering", "locked"].includes(room.turn.phase)
-        ) return;
+        if (!room || !isParticipant(room, playerId)) {
+          reject("This doodle session is no longer available.");
+          return;
+        }
         const sender = room.players.find((player) => player?.id === playerId);
-        if (!sender) return;
+        if (!sender) {
+          reject("This doodle session is no longer available.");
+          return;
+        }
 
         const gallery = (await getJson<DoodleEntry[]>(keys.doodleGallery(roomId))) ?? [];
+        const doodleId = clientId ?? randomUUID();
+        const existing = gallery.find((entry) => entry.id === doodleId);
+        // Idempotency lets a retry recover safely if the acknowledgement was lost.
+        if (existing) {
+          if (existing.senderPlayerId === playerId) reply(true);
+          else reject("That doodle could not be saved. Please try again.");
+          return;
+        }
+        if (
+          room.status !== "active" || room.turn.answererPlayerId === playerId ||
+          room.turn.round !== round || !["answering", "locked"].includes(room.turn.phase)
+        ) {
+          reject("Doodles are available while your partner is answering.");
+          return;
+        }
+        if (!await consumeRateLimit(clientAddress(socket), "doodle", 12, 60)) {
+          reject("Too many doodles were sent. Please wait a minute.");
+          return;
+        }
+
         const entry: DoodleEntry = {
-          id: `${Date.now()}-${randomDoodleSuffix()}`,
+          id: doodleId,
           dataUrl,
           senderPlayerId: playerId,
           senderName: sender.displayName,
@@ -429,10 +434,11 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
         gallery.push(entry);
         await setJson(keys.doodleGallery(roomId), gallery, ROOM_TTL_SECONDS);
         io.to(roomId).emit("doodle:new", entry);
+        reply(true);
       });
     } catch (error) {
       console.error("[doodle:send] Failed:", error);
-      socket.emit("error:generic", { reason: "Your doodle couldn't sync. Please try again." });
+      reject("Your doodle couldn't sync. Please try again.");
     }
   });
 
@@ -457,8 +463,4 @@ export function registerTurnHandlers(io: AppServer, socket: AppSocket): void {
       socket.emit("error:generic", { reason: "That reaction couldn't sync. Please try again." });
     }
   });
-}
-
-function randomDoodleSuffix(): string {
-  return Math.random().toString(36).slice(2, 10);
 }

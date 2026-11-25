@@ -19,7 +19,6 @@ export interface TurnState {
   round: number;
   phase: TurnPhase;
   chosenCategory?: CategoryId;
-  skipsThisTurn: number;
   /** Server timestamp used to keep answer timers in sync after reconnects. */
   answerDeadlineAt?: string | null;
   /** Server timestamp used to resume a coin-toss transition after a restart. */
