@@ -1,0 +1,34 @@
+# Render Blueprint for Twilight Chronicles.
+# Secret and deployment-specific values intentionally stay in Render's dashboard.
+services:
+  - type: web
+    name: twilight-cronicles
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile --prod=false && pnpm --filter @twilight/realtime build
+    startCommand: pnpm --filter @twilight/realtime start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: PAIR_HISTORY_SECRET
+        sync: false
+      - key: TRUST_PROXY
+        value: true
+
+  - type: web
+    name: twilight-cronicles-web
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile --prod=false && pnpm --filter web build
+    startCommand: pnpm --filter web start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_REALTIME_URL
+        sync: false

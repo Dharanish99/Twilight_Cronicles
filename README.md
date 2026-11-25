@@ -27,6 +27,8 @@ pnpm build
 
 Deploy `apps/web` as a Node.js Next.js service and `apps/realtime` as a long-running Node.js service with WebSocket support. The realtime start command is `pnpm --filter @twilight/realtime start`; the web start command is `pnpm --filter web start`.
 
+For Render, [`render.yaml`](./render.yaml) declares both services, their exact monorepo commands, health checks, and automatic deployment. Existing manually-created Render services are not converted automatically: either deploy the Blueprint or copy the matching build/start commands and environment variables into each service before manually deploying the latest commit.
+
 Configure the web build with:
 
 - `NEXT_PUBLIC_REALTIME_URL=https://realtime.example.com`, a URL browsers can reach directly. The build fails if this is missing in production.
