@@ -57,6 +57,34 @@ function connect(url: string): Promise<Socket> {
   });
 }
 
+function waitForIdentity(socket: Socket, timeoutMs = 8_000): Promise<Identity> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("Timed out waiting for room:identity"));
+    }, timeoutMs);
+    const cleanup = () => {
+      clearTimeout(timer);
+      socket.off("room:identity", onIdentity);
+      socket.off("error:generic", onError);
+      socket.off("error:invalid_room", onError);
+      socket.off("error:room_full", onError);
+    };
+    const onIdentity = (identity: Identity) => {
+      cleanup();
+      resolve(identity);
+    };
+    const onError = (payload: { reason?: string }) => {
+      cleanup();
+      reject(new Error(`Realtime service rejected the request: ${payload.reason ?? "unknown reason"}`));
+    };
+    socket.on("room:identity", onIdentity);
+    socket.on("error:generic", onError);
+    socket.on("error:invalid_room", onError);
+    socket.on("error:room_full", onError);
+  });
+}
+
 function sendDoodle(
   socket: Socket,
   payload: { dataUrl: string; round: number; clientId: string },
@@ -81,7 +109,7 @@ test("doodle acknowledgement and broadcast stay in sync for both players", {
 
   const playerOne = await connect(realtimeUrl);
   sockets.push(playerOne);
-  const playerOneIdentity = waitFor<Identity>(playerOne, "room:identity");
+  const playerOneIdentity = waitForIdentity(playerOne);
   const firstRoomSnapshot = waitFor<RoomSnapshot>(playerOne, "room:state_snapshot");
   playerOne.emit("room:create", {
     displayName: "Doodle Tester One",
@@ -98,7 +126,7 @@ test("doodle acknowledgement and broadcast stay in sync for both players", {
 
   const playerTwo = await connect(realtimeUrl);
   sockets.push(playerTwo);
-  const playerTwoIdentity = waitFor<Identity>(playerTwo, "room:identity");
+  const playerTwoIdentity = waitForIdentity(playerTwo);
   const joinedRoom = waitFor<RoomSnapshot>(
     playerOne,
     "room:state_snapshot",
